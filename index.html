@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QUICK!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+<!-- SETUP -->
+<div id="setup">
+  <h1>QUICK!</h1>
+  <p class="sub">Pick a theme. Take turns naming something in it. Too slow, a repeat, or a wrong answer and you lose.</p>
+  <a href="tournament.html" class="panel" style="display:block;text-decoration:none;color:var(--text);border-color:rgba(255,210,63,.4)"><b style="color:var(--brand);font-family:Archivo Black,sans-serif;font-size:20px">TOURNAMENT MODE</b><br><span style="color:var(--dim)">2 to 16 players, brackets, a host screen for the TV and everyone plays on their phone</span></a>
+  <div class="panel">
+    <label>How are you playing?</label>
+    <div class="themes" id="modes">
+      <button class="theme on" data-m="local">Same device<small>pass the keyboard</small></button>
+      <button class="theme" data-m="host">Host online<small>get a room code</small></button>
+      <button class="theme" data-m="join">Join online<small>enter a code</small></button>
+    </div>
+  </div>
+  <div class="panel" id="joinPanel" style="display:none">
+    <div class="row">
+      <div><label>Your name</label><input id="jn" value="Player 2" maxlength="16"></div>
+      <div><label>Room code</label><input id="code" maxlength="4" style="text-transform:uppercase" placeholder="ABCD"></div>
+    </div>
+    <div style="height:12px"></div>
+    <button class="go" id="joinBtn">JOIN</button>
+    <div class="msg" id="joinMsg"></div>
+  </div>
+  <div id="hostBits">
+  <div class="panel">
+    <div class="row">
+      <div><label id="l1">Player 1</label><input id="n1" value="Player 1" maxlength="16"></div>
+      <div id="n2wrap"><label>Player 2</label><input id="n2" value="Player 2" maxlength="16"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <label>Theme</label>
+    <div class="themes" id="themes"></div>
+    <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--dim)">Add your own category</summary>
+      <p style="color:var(--dim);font-size:14px">Paste a category (first line <b>Name: ...</b>, then one answer per line; put other accepted spellings after a <b>|</b>, like <i>Spider-Man|Spiderman|Peter Parker</i>).</p>
+      <textarea id="customText" rows="7" style="width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid var(--line);background:#0d0f13;color:var(--text)" placeholder="Name: Marvel Heroes&#10;Spider-Man|Spiderman&#10;Iron Man&#10;Thor"></textarea>
+      <div style="height:8px"></div>
+      <button class="go alt" id="addCustom" style="font-size:16px;padding:10px">ADD CATEGORY</button>
+      <div class="msg" id="customMsg"></div>
+    </details>
+  </div>
+  <div class="panel">
+    <div class="row">
+      <div><label>Match type</label>
+        <select id="champ"><option value="0">Single games</option><option value="3" selected>Championship: first to 3</option><option value="5">Championship: first to 5</option><option value="7">Championship: first to 7</option></select></div>
+      <div><label>Category each game</label>
+        <select id="mix"><option value="0">Keep my pick</option><option value="1">Random every game</option></select></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="row">
+      <div><label>Seconds per turn</label>
+        <select id="secs"><option>3</option><option>5</option><option selected>7</option><option>10</option><option>15</option></select></div>
+      <div><label>Speed-up</label>
+        <select id="speed"><option value="0">Off</option><option value="1" selected>Shrinks each round</option></select></div>
+    </div>
+  </div>
+  <div class="panel" id="lobby" style="display:none;text-align:center">
+    <label>Room code - send it to your friend</label>
+    <div style="font-size:56px;font-weight:900;letter-spacing:8px" id="roomCode">....</div>
+    <div class="msg" id="lobbyMsg" style="color:var(--dim)">Waiting for someone to join...</div>
+  </div>
+  <button class="go" id="start">START</button>
+  </div>
+</div>
+
+<!-- GUEST WAITING -->
+<div id="wait" class="hidden">
+  <h1>QUICK!</h1>
+  <div class="panel" style="text-align:center"><div style="font-size:22px;font-weight:800" id="waitMsg">Connected. Waiting for the host to start...</div></div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="hidden">
+  <div class="top"><span id="themeName"></span><span id="countInfo"></span></div>
+  <div class="players">
+    <div class="pl a" id="p1"><div class="n" id="pn1"></div><div class="s">Wins: <span id="w1">0</span></div></div>
+    <div class="pl b" id="p2"><div class="n" id="pn2"></div><div class="s">Wins: <span id="w2">0</span></div></div>
+  </div>
+  <div class="panel" id="turnPanel">
+    <div class="turn" id="turnLabel"></div>
+    <div class="time" id="time">7.0</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div style="height:14px"></div>
+    <div class="live" id="live"><span class="cur" id="liveText"></span><span class="caret">|</span></div>
+    <div class="guess" id="guess">&nbsp;</div>
+    <input id="answer" autocomplete="off" spellcheck="false" placeholder="Type and press Enter">
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="panel">
+    <label>Already said</label>
+    <div class="used" id="used"></div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="over" class="hidden">
+  <div class="panel over">
+    <div id="champBanner" style="display:none;font-size:15px;letter-spacing:3px;color:var(--warn);font-weight:800;margin-bottom:6px"></div>
+    <h2 id="winner"></h2>
+    <div class="why" id="why"></div>
+    <div class="score">
+      <div><span id="sn1"></span><b id="sw1">0</b></div>
+      <div><span id="sn2"></span><b id="sw2">0</b></div>
+    </div>
+    <div class="btns">
+      <button class="go" id="again">REMATCH</button>
+      <button class="go alt" id="menu">CHANGE THEME</button>
+    </div>
+  </div>
+  <div class="panel"><label>Answers this round</label><div class="used" id="used2"></div></div>
+  <div class="panel"><label>Some you missed</label><div class="used" id="missed"></div></div>
+</div>
+
+</div>
+<script src="themes.js"></script>
+<script>
+// --- state
+const $ = id => document.getElementById(id);
+let themeKey = 'nba', index, used = [], usedIds = new Set(), turn = 0, timeLeft = 0, turnTime = 7, timer, last, names = ['Player 1', 'Player 2'], wins = [0, 0], starter = 0;
+let mode = 'local', conn = null, peer = null, me = 0, guestName = 'Player 2', running = false;
+
+let target = 0, champDone = false;
+const themesEl = $('themes');
+function drawThemes() {
+  themesEl.innerHTML = '';
+  for (const [k, t] of Object.entries(THEMES)) {
+    const b = document.createElement('button');
+    b.className = 'theme' + (k === themeKey ? ' on' : '');
+    b.innerHTML = `${t.name}<small>${t.hint}${k.startsWith('c_') ? ' · <u data-del>remove</u>' : ''}</small>`;
+    b.onclick = e => {
+      if (e.target.dataset.del !== undefined) { delete THEMES[k]; saveCustom(); if (themeKey === k) themeKey = 'nba'; return drawThemes(); }
+      themeKey = k; [...themesEl.children].forEach(c => c.classList.remove('on')); b.classList.add('on');
+    };
+    themesEl.appendChild(b);
+  }
+}
+function saveCustom() {
+  const c = Object.fromEntries(Object.entries(THEMES).filter(([k]) => k.startsWith('c_')));
+  try { localStorage.setItem('quick_custom', JSON.stringify(c)); } catch (e) {}
+}
+try { Object.assign(THEMES, JSON.parse(localStorage.getItem('quick_custom') || '{}')); } catch (e) {}
+drawThemes();
+$('addCustom').onclick = () => {
+  const lines = $('customText').value.split('\n').map(l => l.trim()).filter(Boolean);
+  let name = '';
+  if (lines[0] && /^name\s*:/i.test(lines[0])) name = lines.shift().replace(/^name\s*:/i, '').trim();
+  if (lines[0] && /^hint\s*:/i.test(lines[0])) lines.shift();
+  const items = lines.map(l => l.replace(/^[-*\d.)\s]+/, '').trim()).filter(l => norm(l));
+  if (!name) return $('customMsg').textContent = 'First line needs to be "Name: something".';
+  if (items.length < 10) return $('customMsg').textContent = 'Needs at least 10 answers.';
+  const key = 'c_' + norm(name);
+  THEMES[key] = { name, hint: `${items.length} answers · custom`, items };
+  themeKey = key; saveCustom(); drawThemes();
+  $('customText').value = '';
+  $('customMsg').textContent = `Added ${name} with ${items.length} answers.`;
+};
+
+function show(id) { ['setup', 'wait', 'game', 'over'].forEach(s => $(s).classList.toggle('hidden', s !== id)); }
+const online = () => mode === 'host' || mode === 'guest';
+const myTurn = () => !online() || turn === me;
+const send = m => { if (conn && conn.open) conn.send(m); };
+
+// --- mode picker
+for (const b of $('modes').children) b.onclick = () => {
+  if (peer) { peer.destroy(); peer = null; conn = null; }
+  [...$('modes').children].forEach(c => c.classList.remove('on')); b.classList.add('on');
+  const m = b.dataset.m;
+  mode = m === 'join' ? 'join' : m;
+  $('joinPanel').style.display = m === 'join' ? '' : 'none';
+  $('hostBits').style.display = m === 'join' ? 'none' : '';
+  $('n2wrap').style.display = m === 'host' ? 'none' : '';
+  $('l1').textContent = m === 'host' ? 'Your name' : 'Player 1';
+  $('lobby').style.display = m === 'host' ? '' : 'none';
+  $('start').disabled = m === 'host';
+  $('start').style.opacity = m === 'host' ? .4 : 1;
+  if (m === 'host') hostRoom();
+};
+
+const PREFIX = 'quickgame-x7-';
+function hostRoom() {
+  const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
+  $('roomCode').textContent = code;
+  $('lobbyMsg').textContent = 'Waiting for someone to join...';
+  peer = new Peer(PREFIX + code);
+  peer.on('error', e => { if (e.type === 'unavailable-id') hostRoom(); else $('lobbyMsg').textContent = 'Connection error: ' + e.type; });
+  peer.on('connection', c => {
+    if (conn && conn.open) { c.on('open', () => { c.send({t: 'full'}); setTimeout(() => c.close(), 300); }); return; }
+    conn = c; me = 0;
+    c.on('data', onData);
+    c.on('close', () => { conn = null; dropped(); });
+  });
+}
+function joinRoom() {
+  const code = $('code').value.trim().toUpperCase();
+  if (code.length !== 4) return $('joinMsg').textContent = 'Codes are 4 letters.';
+  $('joinMsg').textContent = 'Connecting...';
+  if (peer) peer.destroy();
+  peer = new Peer();
+  peer.on('error', e => $('joinMsg').textContent = e.type === 'peer-unavailable' ? 'No room with that code.' : 'Connection error: ' + e.type);
+  peer.on('open', () => {
+    conn = peer.connect(PREFIX + code, {reliable: true});
+    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name: $('jn').value.trim() || 'Player 2'}); show('wait'); });
+    conn.on('data', onData);
+    conn.on('close', () => { conn = null; dropped(); });
+  });
+}
+$('joinBtn').onclick = joinRoom;
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+
+function dropped() {
+  clearInterval(timer); running = false;
+  alert('The other player disconnected.');
+  location.reload();
+}
+
+// --- messages
+function onData(m) {
+  if (m.t === 'full') { $('joinMsg').textContent = 'That room already has two players.'; return; }
+  if (mode === 'host') {
+    if (m.t === 'hello') { guestName = m.name; $('lobbyMsg').textContent = `${m.name} joined. Pick a theme and press START.`; $('start').disabled = false; $('start').style.opacity = 1; }
+    if (m.t === 'live' && turn === 1 && running) { $('answer').value = m.v; updateLive(); }
+    if (m.t === 'submit' && turn === 1 && running) submit(m.v);
+  } else {
+    if (m.t === 'turn') { ({themeKey, names, wins, turn, turnTime, target} = m); THEMES[themeKey] = m.theme; applyUsed(m.used); beginTurn(); }
+    if (m.t === 'live') { $('answer').value = m.v; updateLive(); }
+    if (m.t === 'over') { clearInterval(timer); running = false; ({wins, names, target, champDone} = m); applyUsed(m.used); showOver(m.w, m.why, m.missed); }
+    if (m.t === 'menu') { show('wait'); $('waitMsg').textContent = 'The host is picking a new theme...'; }
+  }
+}
+function applyUsed(list) {
+  if (!index || index.key !== themeKey) { index = buildIndex(THEMES[themeKey].items); index.key = themeKey; }
+  used = list; usedIds = new Set(list.map(u => u.id));
+}
+
+// --- game (host or local runs the rules)
+function startRound() {
+  names = mode === 'host' ? [$('n1').value.trim() || 'Player 1', guestName] : [$('n1').value.trim() || 'Player 1', $('n2').value.trim() || 'Player 2'];
+  if ($('mix').value === '1') { const ks = Object.keys(THEMES).filter(k => k !== themeKey); themeKey = ks[Math.floor(Math.random() * ks.length)]; }
+  index = buildIndex(THEMES[themeKey].items); index.key = themeKey;
+  used = []; usedIds = new Set(); turn = starter;
+  nextTurn();
+}
+
+function nextTurn() {
+  const base = +$('secs').value;
+  const shrink = $('speed').value === '1' ? Math.floor(used.length / 2) * 0.25 : 0;
+  turnTime = Math.max(2, base - shrink);
+  send({t: 'turn', themeKey, theme: THEMES[themeKey], names, wins, turn, turnTime, used, target});
+  beginTurn();
+}
+
+function beginTurn() {
+  running = true;
+  timeLeft = turnTime;
+  $('themeName').textContent = THEMES[themeKey].name;
+  $('pn1').textContent = names[0]; $('pn2').textContent = names[1];
+  $('w1').textContent = wins[0] + (target ? ` / ${target}` : ''); $('w2').textContent = wins[1] + (target ? ` / ${target}` : '');
+  $('used').innerHTML = [...used].reverse().map(u => `<span class="chip ${u.by ? 'b' : 'a'}">${u.label}</span>`).join('');
+  $('msg').textContent = used.length && used[used.length - 1].note || '';
+  show('game');
+  $('p1').classList.toggle('active', turn === 0);
+  $('p2').classList.toggle('active', turn === 1);
+  const mine = myTurn();
+  $('turnLabel').textContent = online() ? (mine ? 'Your turn, go!' : `${names[turn]} is typing...`) : `${names[turn]}, go!`;
+  $('turnLabel').style.color = turn === 0 ? 'var(--p1)' : 'var(--p2)';
+  $('countInfo').textContent = `${used.length} said · ${turnTime.toFixed(2).replace(/\.?0+$/,'')}s per turn`;
+  const a = $('answer'); a.value = ''; a.disabled = !mine;
+  a.placeholder = mine ? 'Type and press Enter' : 'Watch them type...';
+  if (mine) a.focus();
+  updateLive();
+  if (used.length) { $('turnPanel').classList.remove('flash'); void $('turnPanel').offsetWidth; $('turnPanel').classList.add('flash'); }
+  last = performance.now();
+  clearInterval(timer);
+  timer = setInterval(tick, 50);
+  render();
+}
+
+function tick() {
+  const now = performance.now();
+  timeLeft -= (now - last) / 1000; last = now;
+  if (timeLeft <= 0) {
+    timeLeft = 0; render();
+    if (mode !== 'guest') return lose(`Time ran out on ${names[turn]}.`);
+    return clearInterval(timer); // guest waits for host's verdict
+  }
+  render();
+}
+
+function render() {
+  $('time').textContent = timeLeft.toFixed(1); $('time').classList.toggle('low', timeLeft < 2 && running);
+  const pct = timeLeft / turnTime;
+  const f = $('fill');
+  f.style.width = (pct * 100) + '%';
+  f.style.background = pct > .5 ? 'var(--good)' : pct > .25 ? 'var(--warn)' : 'var(--p1)';
+}
+
+function submit(text) {
+  if (!running || !norm(text)) return;
+  const hit = match(index, text);
+  if (!hit) return lose(`"${text}" isn't in ${THEMES[themeKey].name}.`);
+  if (usedIds.has(hit.id)) return lose(`${hit.label} was already said.`);
+  usedIds.add(hit.id);
+  const note = index.map.get(norm(text)) ? '' : `"${text}" counted as ${hit.label}`;
+  used.push({ id: hit.id, label: hit.label, by: turn, note });
+  if (usedIds.size === index.list.length) return lose(`Every answer is taken. ${names[turn]} said the last one.`, turn);
+  turn = 1 - turn;
+  nextTurn();
+}
+
+function lose(why, winnerOverride) {
+  clearInterval(timer); running = false;
+  const w = winnerOverride ?? 1 - turn;
+  wins[w]++;
+  starter = turn; // loser starts the rematch
+  const missed = index.list.filter(x => !usedIds.has(x.id)).sort(() => Math.random() - .5).slice(0, 12).map(x => x.label);
+  champDone = target > 0 && wins[w] >= target;
+  send({t: 'over', w, why, wins, names, used, missed, target, champDone});
+  showOver(w, why, missed);
+}
+
+function showOver(w, why, missed) {
+  const cb = $('champBanner');
+  cb.style.display = target ? '' : 'none';
+  cb.textContent = champDone ? 'CHAMPIONSHIP OVER' : `GAME ${wins[0] + wins[1]} · FIRST TO ${target}`;
+  $('turnPanel').classList.add('shake');
+  $('answer').disabled = true;
+  setTimeout(() => {
+    $('turnPanel').classList.remove('shake');
+    const who = online() && w === me ? 'You' : names[w];
+    $('winner').textContent = champDone ? `${who} ${who === 'You' ? 'are' : 'is'} the champion!` : `${who} win${who === 'You' ? '' : 's'}${target ? ' this game' : ''}!`;
+    $('winner').style.color = w === 0 ? 'var(--p1)' : 'var(--p2)';
+    $('why').textContent = why;
+    $('sn1').textContent = names[0]; $('sn2').textContent = names[1];
+    $('sw1').textContent = wins[0]; $('sw2').textContent = wins[1];
+    $('used2').innerHTML = used.map(u => `<span class="chip ${u.by ? 'b' : 'a'}">${u.label}</span>`).join('') || '<span style="color:var(--dim)">Nothing. Brutal.</span>';
+    $('missed').innerHTML = missed.map(x => `<span class="chip">${x}</span>`).join('') || '<span style="color:var(--dim)">None, you got them all.</span>';
+    const guest = mode === 'guest';
+    $('again').disabled = guest; $('menu').disabled = guest;
+    $('again').textContent = guest ? 'WAITING FOR HOST' : champDone ? 'NEW CHAMPIONSHIP' : target ? 'NEXT GAME' : 'REMATCH';
+    $('menu').style.display = guest ? 'none' : '';
+    show('over');
+    if (!guest) $('again').focus();
+  }, 450);
+}
+
+function updateLive() {
+  const v = $('answer').value;
+  $('liveText').textContent = v;
+  $('liveText').style.color = turn === 0 ? 'var(--p1)' : 'var(--p2)';
+  const hit = index && match(index, v);
+  $('guess').innerHTML = !norm(v) ? '&nbsp;' : hit
+    ? (usedIds.has(hit.id) ? `<b>${hit.label}</b> (already said!)` : `will count as <b>${hit.label}</b>`)
+    : 'no match yet';
+}
+$('answer').addEventListener('input', () => { updateLive(); if (online() && myTurn()) send({t: 'live', v: $('answer').value}); });
+$('answer').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !myTurn()) return;
+  if (mode === 'guest') { send({t: 'submit', v: $('answer').value}); $('answer').disabled = true; }
+  else submit($('answer').value);
+});
+$('start').onclick = () => { if ($('start').disabled) return; wins = [0, 0]; starter = 0; target = +$('champ').value; champDone = false; startRound(); };
+$('again').onclick = () => { if (champDone) { wins = [0, 0]; champDone = false; } startRound(); };
+$('menu').onclick = () => { send({t: 'menu'}); show('setup'); };
+</script>
+</body>
+</html>
