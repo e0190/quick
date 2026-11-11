@@ -138,3 +138,8 @@ a{color:var(--brand)}
 .picon{display:inline-block;vertical-align:middle;margin-right:.35em}
 .ipick.compact,#jIcons,#pIcons{grid-template-columns:repeat(8,1fr);gap:4px}
 .ipick.compact button,#jIcons button,#pIcons button{padding:2px;border-radius:12px}
+/* fixes found while screenshotting */
+#roomCode.codeinline{font-size:inherit!important;letter-spacing:3px!important;font-family:'Archivo Black',sans-serif}
+.back{display:table;margin-bottom:10px}
+#jIcons,#pIcons{max-width:440px}
+#hIcons{max-width:none}
