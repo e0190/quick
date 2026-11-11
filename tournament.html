@@ -125,7 +125,7 @@
   <div class="panel hidden" id="pinputWrap">
     <div class="live"><span id="liveText"></span><span class="caret">|</span></div>
     <div class="guess" id="guess">&nbsp;</div>
-    <input id="answer" autocomplete="off" spellcheck="false" placeholder="Type and press Enter">
+    <div class="answerRow"><input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Type here"><button class="go gobtn" id="goBtn" type="button">GO</button></div>
   </div>
 </div>
 
@@ -432,7 +432,7 @@ function renderPlayer() {
     el.innerHTML = s.you ? `<div class="center dim" style="font-weight:800;letter-spacing:3px">YOU WON IT ALL</div><div class="champ">CHAMPION</div>` : `<div class="center dim" style="font-weight:800;letter-spacing:3px">CHAMPION</div><div class="champ">${esc(s.champ)}</div>`;
   } else if (!inMatch) {
     el.innerHTML = `<div class="center dim" style="font-weight:800;letter-spacing:2px">${s.elim ? "YOU'RE OUT. WATCHING" : 'UP NEXT? WATCHING'}</div><div class="banner" style="font-size:34px"><span style="color:var(--p1)">${esc(s.a)}</span> vs <span style="color:var(--p2)">${esc(s.b)}</span></div><div class="center dim">${s.score[0]} - ${s.score[1]}${s.phase === 'play' ? ` · ${esc(s.turn ? s.b : s.a)} is typing` : ''}</div>`;
-    if (s.phase === 'play') { inp.classList.remove('hidden'); $('answer').classList.add('hidden'); $('liveText').textContent = ''; $('guess').innerHTML = '&nbsp;'; }
+    if (s.phase === 'play') { inp.classList.remove('hidden'); $('answer').parentNode.classList.add('hidden'); $('liveText').textContent = ''; $('guess').innerHTML = '&nbsp;'; }
   } else if (s.phase === 'intro') {
     el.innerHTML = `<div class="center dim" style="font-weight:800;letter-spacing:2px">YOU'RE UP · GAME ${s.game}</div><div class="banner" style="font-size:34px">vs ${esc(opp)}</div><div class="center" style="color:var(--brand);font-size:22px;font-weight:800">${esc(s.theme)}</div><div class="countdown">${s.count}</div>`;
   } else if (s.phase === 'play') {
@@ -442,9 +442,10 @@ function renderPlayer() {
       <div class="msg center">${esc(s.msg || '')}</div>
       <div class="used" style="justify-content:center">${[...s.used].reverse().slice(0, 12).map(u => `<span class="chip">${esc(u)}</span>`).join('')}</div>`;
     inp.classList.remove('hidden');
-    const a = $('answer'); a.classList.toggle('hidden', !mine); a.disabled = !mine; a.value = '';
+    const a = $('answer'); a.parentNode.classList.remove('hidden'); a.disabled = false; a.value = ''; psent = false;
+    a.placeholder = mine ? 'Type here' : 'Wait for your turn...';
     $('liveText').textContent = ''; $('liveText').style.color = s.turn ? 'var(--p2)' : 'var(--p1)'; $('guess').innerHTML = '&nbsp;';
-    if (mine) a.focus();
+    a.focus();
     const end = performance.now() + s.timeLeft * 1000;
     ptimer = setInterval(() => {
       const left = Math.max(0, (end - performance.now()) / 1000), t = $('ptime'), f = $('pfill');
@@ -461,14 +462,21 @@ function renderPlayer() {
     el.innerHTML = `<div class="banner" style="color:${won ? 'var(--brand)' : 'var(--p1)'}">${won ? 'You advance!' : "You're out"}</div><div class="center dim" style="font-size:18px">${esc(s.why)}</div>`;
   }
 }
+let psent = false;
+const pMine = () => st && st.phase === 'play' && st.turn === st.me && !psent;
 $('answer').addEventListener('input', () => {
+  if (!pMine()) { $('answer').value = ''; return; }
   const v = $('answer').value; $('liveText').textContent = v; updateGuess(v);
   if (conn && conn.open) conn.send({t: 'live', v});
 });
-$('answer').addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || !norm($('answer').value)) return;
-  conn.send({t: 'submit', v: $('answer').value}); $('answer').disabled = true;
-});
+function pSend() {
+  const v = $('answer').value;
+  if (!pMine() || !norm(v)) return;
+  psent = true; conn.send({t: 'submit', v});
+}
+$('answer').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pSend(); } });
+$('goBtn').addEventListener('pointerdown', e => e.preventDefault());
+$('goBtn').addEventListener('click', () => { pSend(); $('answer').focus(); });
 </script>
 </body>
 </html>

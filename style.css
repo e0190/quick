@@ -123,3 +123,8 @@ a{color:var(--brand)}
 @keyframes glow{to{box-shadow:0 6px 0 #2a5fb0,0 14px 46px rgba(63,184,255,.6)}}
 .cards.two{grid-template-columns:1fr 1fr}
 @media(max-width:560px){.cards.two{grid-template-columns:1fr}.joinbig b{font-size:28px}}
+/* answer box + GO button (easy to tap on phones) */
+.answerRow{display:flex;gap:10px;align-items:stretch}
+.answerRow input{flex:1;min-width:0}
+.gobtn{width:auto!important;padding:0 26px!important;font-size:22px!important}
+@media(max-width:560px){.wrap{padding-top:14px}.time{margin:6px 0 10px}.live{margin:10px 0 4px;min-height:44px}#turnPanel{padding:18px 14px}}

@@ -130,7 +130,7 @@
     <div style="height:14px"></div>
     <div class="live" id="live"><span class="cur" id="liveText"></span><span class="caret">|</span></div>
     <div class="guess" id="guess">&nbsp;</div>
-    <input id="answer" autocomplete="off" spellcheck="false" placeholder="Type and press Enter">
+    <div class="answerRow"><input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Type here"><button class="go gobtn" id="goBtn" type="button">GO</button></div>
     <div class="msg" id="msg"></div>
   </div>
   <div class="panel">
@@ -357,11 +357,11 @@ function onData(m) {
   if (m.t === 'full') { $('joinMsg').textContent = 'That room already has two players.'; return; }
   if (mode === 'host') {
     if (m.t === 'hello') { guestName = m.name; setStatus(`${m.name} joined! Pick a category and press START.`, true); $('start').disabled = false; $('start').textContent = 'START'; toast(`${m.name} joined`); }
-    if (m.t === 'live' && turn === 1 && running) { $('answer').value = m.v; updateLive(); }
+    if (m.t === 'live' && turn === 1 && running) updateLive(m.v);
     if (m.t === 'submit' && turn === 1 && running) submit(m.v);
   } else {
     if (m.t === 'turn') { ({themeKey, names, wins, turn, turnTime, target} = m); THEMES[themeKey] = m.theme; applyUsed(m.used); beginTurn(); }
-    if (m.t === 'live') { $('answer').value = m.v; updateLive(); }
+    if (m.t === 'live') updateLive(m.v);
     if (m.t === 'over') { clearInterval(timer); running = false; ({wins, names, target, champDone} = m); applyUsed(m.used); showOver(m.w, m.why, m.missed); }
     if (m.t === 'menu') { show('wait'); $('waitMsg').textContent = 'The host is picking a new theme...'; }
   }
@@ -403,9 +403,9 @@ function beginTurn() {
   $('turnLabel').textContent = online() ? (mine ? 'Your turn, go!' : `${names[turn]} is typing...`) : `${names[turn]}, go!`;
   $('turnLabel').style.color = turn === 0 ? 'var(--p1)' : 'var(--p2)';
   $('countInfo').textContent = `${used.length} said · ${turnTime.toFixed(2).replace(/\.?0+$/,'')}s per turn`;
-  const a = $('answer'); a.value = ''; a.disabled = !mine;
-  a.placeholder = mine ? 'Type and press Enter' : 'Watch them type...';
-  if (mine) a.focus();
+  const a = $('answer'); a.value = ''; a.disabled = false; sent = false; // stays enabled so phone keyboards don't close between turns
+  a.placeholder = mine ? 'Type here' : 'Wait for your turn...';
+  a.focus(); // keep focus so a phone keyboard stays up
   updateLive();
   if (used.length) { $('turnPanel').classList.remove('flash'); void $('turnPanel').offsetWidth; $('turnPanel').classList.add('flash'); }
   last = performance.now();
@@ -482,8 +482,8 @@ function showOver(w, why, missed) {
   }, 450);
 }
 
-function updateLive() {
-  const v = $('answer').value;
+let sent = false;
+function updateLive(v = myTurn() ? $('answer').value : '') {
   $('liveText').textContent = v;
   $('liveText').style.color = turn === 0 ? 'var(--p1)' : 'var(--p2)';
   const hit = index && match(index, v);
@@ -491,12 +491,19 @@ function updateLive() {
     ? (usedIds.has(hit.id) ? `<b>${hit.label}</b> (already said!)` : `will count as <b>${hit.label}</b>`)
     : 'no match yet';
 }
-$('answer').addEventListener('input', () => { updateLive(); if (online() && myTurn()) send({t: 'live', v: $('answer').value}); });
-$('answer').addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || !myTurn()) return;
-  if (mode === 'guest') { send({t: 'submit', v: $('answer').value}); $('answer').disabled = true; }
-  else submit($('answer').value);
+$('answer').addEventListener('input', () => {
+  if (!myTurn() || sent) { $('answer').value = ''; return; } // not your turn: ignore typing
+  updateLive(); if (online()) send({t: 'live', v: $('answer').value});
 });
+function sendAnswer() {
+  const v = $('answer').value;
+  if (!myTurn() || sent || !running || !norm(v)) return;
+  if (mode === 'guest') { sent = true; send({t: 'submit', v}); }
+  else submit(v);
+}
+$('answer').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendAnswer(); } });
+$('goBtn').addEventListener('pointerdown', e => e.preventDefault()); // keep the keyboard open
+$('goBtn').addEventListener('click', () => { sendAnswer(); $('answer').focus(); });
 $('start').onclick = () => { if ($('start').disabled) return; if (mode === 'host') saveName($('n1').value.trim()); wins = [0, 0]; starter = 0; target = +$('champ').value; champDone = false; startRound(); };
 $('again').onclick = () => { if (champDone) { wins = [0, 0]; champDone = false; } startRound(); };
 $('menu').onclick = () => { send({t: 'menu'}); show('setup'); };
