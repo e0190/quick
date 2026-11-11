@@ -149,8 +149,8 @@ function openPJoin(code) {
   show('pjoin'); ($('pname').value ? (code ? $('pgo') : $('pcode')) : $('pname')).focus();
 }
 $('beJoin').onclick = () => openPJoin('');
-const qp = new URLSearchParams(location.search), qJoin = qp.get('j') || qp.get('join');
-if (qJoin) { history.replaceState(null, '', location.pathname); setTimeout(() => { openPJoin(qJoin.toUpperCase()); if (qp.get('auto') && $('pname').value) pJoin(); }); }
+const handed = takeHandoff(), qJoin = handed || getParam('j') || getParam('join');
+if (qJoin) { clearParams(); setTimeout(() => { openPJoin(qJoin.toUpperCase()); if ((handed || getParam('auto')) && $('pname').value) pJoin(); }); }
 
 /* =================== HOST =================== */
 let themeKey = 'nba', peer, players = new Map(), order = [], rounds = [], cur = null, started = false, timer;
@@ -169,8 +169,8 @@ $('openRoom').onclick = () => { show('hlobby'); openRoom(); };
 function openRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('hcode').textContent = code;
-  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play').replace(location.protocol + '//', ''));
-  const url = SITE + 'tournament.html?j=' + code;
+  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play.html').replace(/^https?:\/\//, ''));
+  const url = SITE + 'tournament.html#j=' + code;
   $('hurl').textContent = url.replace(/^https?:\/\//, '');
   $('shareT').onclick = async () => { if ((await shareOrCopy(url, 'Join my QUICK! tournament')) === 'copied') toast('Invite link copied. Send it to the players.'); };
   peer = new Peer(PREFIX + code);
@@ -399,7 +399,7 @@ function pJoin() {
   $('pmsg').textContent = 'Connecting...';
   if (peer) peer.destroy();
   peer = new Peer();
-  peer.on('error', e => $('pmsg').textContent = e.type === 'peer-unavailable' ? 'No tournament with that code.' : 'Connection error: ' + e.type);
+  peer.on('error', e => { $('pcodeWrap').style.display = ''; $('pmsg').textContent = e.type === 'peer-unavailable' ? 'No tournament with that code. Check it and try again.' : 'Connection error: ' + e.type; });
   peer.on('open', () => {
     conn = peer.connect(PREFIX + code, {reliable: true});
     conn.on('open', () => conn.send({t: 'hello', name}));

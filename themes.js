@@ -92,7 +92,31 @@ function parseAnswers(text) {
 }
 
 // --- share links: category packed into the URL, then shortened with is.gd
-const SITE = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+// The game's folder address, for links people share. Uses the base address (not
+// location) because some hosts show the page inside a frame whose own address is
+// "about:srcdoc". Works whether the folder is .../quick/, .../quick or .../x.ek
+const SITE = (() => {
+  let b = String(document.baseURI || location.href).replace(/[?#].*$/, '');
+  b = b.replace(/\/(index|tournament|play)(\.html)?$/i, '/');
+  return /\/$/.test(b) ? b : b + '/';
+})();
+// Read ?name=value or #name=value (some hosts drop the ?part, so links use #)
+function getParam(name) {
+  const h = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const q = new URLSearchParams(location.search || '');
+  return h.get(name) || q.get(name);
+}
+function clearParams() { try { history.replaceState(null, '', location.href.replace(/[?#].*$/, '')); } catch (e) {} }
+// Pass a join code from the join page to the game page (survives hosts that drop
+// everything after the page name when moving between pages)
+function setHandoff(code) { try { localStorage.setItem('quick_handoff', JSON.stringify({ code, t: Date.now() })); } catch (e) {} }
+function takeHandoff() {
+  try {
+    const h = JSON.parse(localStorage.getItem('quick_handoff') || 'null');
+    localStorage.removeItem('quick_handoff');
+    return h && Date.now() - h.t < 60000 ? h.code : null;
+  } catch (e) { return null; }
+}
 async function packCategory(t) {
   const bytes = new TextEncoder().encode(JSON.stringify({ n: t.name, i: t.items }));
   const cs = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));

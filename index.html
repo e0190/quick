@@ -17,7 +17,7 @@
 <div id="home">
   <h1>QUICK!</h1>
   <p class="sub">Take turns naming things in a category. Too slow, a repeat or a wrong answer and you lose.</p>
-  <a class="joinbig" href="play/"><b>JOIN A GAME</b><span>Got a code from a friend? Tap here</span></a>
+  <a class="joinbig" href="play.html"><b>JOIN A GAME</b><span>Got a code from a friend? Tap here</span></a>
   <div class="cards two">
     <button class="card" id="goFriends"><b>Play with friends</b><span>Two players, on one computer or each on your own device.</span></button>
     <a class="card" href="tournament.html"><b>Tournament</b><span>3 or more players with a bracket. Best on a TV with phones.</span></a>
@@ -206,7 +206,7 @@ segmentize();
 
 async function shareCategory(k) {
   toast('Making a short link...');
-  const long = SITE + '?cat=' + await packCategory(THEMES[k]);
+  const long = SITE + '#cat=' + await packCategory(THEMES[k]);
   const url = await shorten(long);
   const how = await shareOrCopy(url, `QUICK! category: ${THEMES[k].name}`);
   if (how === 'copied') toast('Link copied. Paste it to a friend and it adds the category for them.');
@@ -278,8 +278,8 @@ function startSetup(m) {
 function hostRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('roomCode').textContent = code;
-  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play').replace(location.protocol + '//', ''));
-  const link = SITE + '?j=' + code;
+  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play.html').replace(/^https?:\/\//, ''));
+  const link = SITE + '#j=' + code;
   $('inviteLink').textContent = link.replace(/^https?:\/\//, '');
   $('shareInvite').onclick = async () => {
     const how = await shareOrCopy(link, 'Play QUICK! with me');
@@ -317,7 +317,7 @@ function joinRoom() {
   $('joinMsg').textContent = 'Connecting...';
   if (peer) peer.destroy();
   peer = new Peer();
-  peer.on('error', e => $('joinMsg').textContent = e.type === 'peer-unavailable' ? "That game isn't open anymore. Ask your friend for a new link." : 'Connection problem: ' + e.type);
+  peer.on('error', e => { $('codeWrap').style.display = ''; $('joinMsg').textContent = e.type === 'peer-unavailable' ? "No game with that code is open. Check it with your friend." : 'Connection problem: ' + e.type; });
   peer.on('open', () => {
     conn = peer.connect(PREFIX + code, {reliable: true});
     conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name}); $('waitMsg').textContent = "You're in! Waiting for your friend to press START..."; show('wait'); });
@@ -332,17 +332,17 @@ $('jn').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); })
 function dropped() {
   clearInterval(timer); running = false;
   alert('The other player disconnected.');
-  location.href = SITE;
+  location.href = 'index.html';
 }
 
 // --- links: ?j=CODE joins, ?cat=... adds a shared category
 (async () => {
-  const q = new URLSearchParams(location.search);
-  const j = q.get('j') || q.get('join');
-  if (j) { history.replaceState(null, '', SITE); openJoin(j.toUpperCase()); if (q.get('auto') && $('jn').value) joinRoom(); return; }
-  const cat = q.get('cat');
+  const handed = takeHandoff();
+  const j = handed || getParam('j') || getParam('join');
+  if (j) { clearParams(); openJoin(j.toUpperCase()); if ((handed || getParam('auto')) && $('jn').value) joinRoom(); return; }
+  const cat = getParam('cat');
   if (cat) {
-    history.replaceState(null, '', SITE);
+    clearParams();
     try {
       const { name, items } = await unpackCategory(cat);
       themeKey = addCustom(name, items); drawThemes();

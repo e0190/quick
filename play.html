@@ -6,13 +6,13 @@
 <title>Join a game - QUICK!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <a href="../" class="back">Home</a>
+  <a href="index.html" class="back">Home</a>
   <h1>QUICK!</h1>
   <div class="panel">
     <div class="big-q">Join a game</div>
@@ -31,7 +31,7 @@
 <script>
 const $ = id => document.getElementById(id);
 try { $('name').value = localStorage.getItem('quick_name') || ''; } catch (e) {}
-const pre = new URLSearchParams(location.search).get('j');
+const pre = (function () { const s = new URLSearchParams(String(location.hash).replace(/^#/, '')).get('j') || new URLSearchParams(location.search).get('j'); return s; })();
 if (pre) $('code').value = pre.toUpperCase();
 ($('name').value ? $('code') : $('name')).focus();
 
@@ -43,11 +43,14 @@ function go() {
   try { localStorage.setItem('quick_name', name); } catch (e) {}
   $('msg').textContent = 'Finding the game...'; $('go').disabled = true;
   if (peer) peer.destroy();
-  const targets = { 'quickgame-x7-': '../index.html', 'quicktourney-x7-': '../tournament.html' };
+  const targets = { 'quickgame-x7-': 'index.html', 'quicktourney-x7-': 'tournament.html' };
   let misses = 0, done = false;
   const finish = (page) => {
     if (done) return; done = true; peer.destroy();
-    if (page) location.href = page + '?j=' + code + '&auto=1';
+    if (page) {
+      try { localStorage.setItem('quick_handoff', JSON.stringify({ code, t: Date.now() })); } catch (e) {}
+      location.href = page + '#j=' + code + '&auto=1';
+    }
     else { $('msg').textContent = "No game with that code is open. Check the code with your friend."; $('go').disabled = false; }
   };
   peer = new Peer();
