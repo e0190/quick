@@ -152,29 +152,51 @@ const pos = (t) => { const p = String(t).split(':'); return p.length === 3 ? p.s
     built = true;
   }
 
-  return {
+  // state: 'idle' | 'off' | 'loading' | 'blocked' (browser won't allow sound yet) | 'playing' | 'failed'
+  let state = 'idle', wanted = false;
+  const api = {
     build,
+    onchange: null,
+    get state() { return state; },
     get muted() { return isMuted(); },
     async start() {
-      if (!window.Tone || isMuted()) return;
+      const set = (s) => { state = s; if (api.onchange) api.onchange(s); };
+      if (!window.Tone) return set('failed');
+      if (isMuted()) return set('off');
+      wanted = true;
+      if (state === 'loading' || state === 'playing') return;
+      // Must be the first thing in a click: browsers only allow sound right after one.
+      let resumed;
+      try { resumed = Tone.start(); } catch (e) { resumed = Promise.resolve(); }
+      set('loading');
+      await Promise.race([resumed.catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+      if (Tone.context.state !== 'running') return set('blocked'); // try again on the next click
       try {
-        await Tone.start();
         if (!built) { loading = loading || build(); await loading; }
-        Tone.Destination.volume.value = -60;
-        Tone.Destination.volume.rampTo(0, 1.5);
-        if (!playing) { Tone.getContext().transport.start('+0.1'); playing = true; }
-      } catch (e) { console.warn('music unavailable', e); }
+      } catch (e) { console.warn('music unavailable', e); loading = null; return set('failed'); }
+      if (!wanted || isMuted()) return set('off');
+      Tone.Destination.volume.value = -60;
+      Tone.Destination.volume.rampTo(0, 1.5);
+      if (!playing) { Tone.getContext().transport.start('+0.1'); playing = true; }
+      set('playing');
     },
     stop() {
+      wanted = false;
+      if (state !== 'playing') { state = isMuted() ? 'off' : 'idle'; if (api.onchange) api.onchange(state); }
       if (!window.Tone || !playing) return;
       Tone.Destination.volume.rampTo(-60, 1.2);
       setTimeout(() => { Tone.getContext().transport.stop(); playing = false; }, 1300);
+      state = isMuted() ? 'off' : 'idle'; if (api.onchange) api.onchange(state);
     },
     toggle() {
+      if (state === 'blocked' || state === 'failed') { this.start(); return true; } // a tap to unlock, not a mute
       const m = !isMuted();
       try { localStorage.setItem('quick_muted', m ? '1' : '0'); } catch (e) {}
       if (m) this.stop(); else this.start();
       return !m; // true = music on
     }
   };
+  // If the browser blocked sound, any later click or key press tries again.
+  ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, () => { if (wanted && state === 'blocked') api.start(); }, true));
+  return api;
 })();
