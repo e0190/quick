@@ -111,3 +111,6 @@ a{color:var(--brand)}
 .setting .q{font-weight:800;font-size:16px;margin-bottom:8px}
 .check{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:600;cursor:pointer}
 .check input{width:22px;height:22px;accent-color:var(--brand)}
+
+/* no preview of what a typo will turn into */
+.guess{display:none!important}

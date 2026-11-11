@@ -39,7 +39,10 @@ function lev(a, b) {
   const d = Array.from({length: a.length + 1}, (_, i) => [i]);
   for (let j = 1; j <= b.length; j++) d[0][j] = j;
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+  {
     d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    if (i > 1 && j > 1 && a[i-1] === b[j-2] && a[i-2] === b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2] + 1); // swapped letters
+  }
   return d[a.length][b.length];
 }
 function buildIndex(items) {
@@ -56,16 +59,12 @@ function match(index, text) {
   const k = norm(text);
   if (!k) return null;
   if (index.map.has(k)) return index.map.get(k);
-  if (k.length < 3) return null;
-  // snap to the closest answer: allow roughly 1 wrong letter per 3
-  const allow = Math.max(1, Math.floor(k.length / 3));
+  if (k.length < 4) return null;
+  // only fix small typos: about 1 wrong letter per 4 letters
+  const allow = Math.max(1, Math.floor(k.length / 4));
   let best = null, bestD = allow + 1;
-  for (const [key, val] of index.map) { const dd = lev(k, key); if (dd < bestD) { bestD = dd; best = val; } }
-  if (best) return best;
-  // unique start of a name ("timberw" -> Timberwolves)
-  const pre = [...new Set([...index.map].filter(([key]) => key.startsWith(k)).map(([, v]) => v.id))];
-  if (k.length >= 4 && pre.length === 1) return index.list.find(x => x.id === pre[0]);
-  return null;
+  for (const [key, val] of index.map) { if (Math.abs(key.length - k.length) > allow) continue; const dd = lev(k, key); if (dd < bestD) { bestD = dd; best = val; } }
+  return best;
 }
 
 
