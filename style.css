@@ -128,3 +128,13 @@ a{color:var(--brand)}
 .answerRow input{flex:1;min-width:0}
 .gobtn{width:auto!important;padding:0 26px!important;font-size:22px!important}
 @media(max-width:560px){.wrap{padding-top:14px}.time{margin:6px 0 10px}.live{margin:10px 0 4px;min-height:44px}#turnPanel{padding:18px 14px}}
+
+/* icon picker */
+.ipick{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px}
+.ipick button{padding:3px;border:2px solid transparent;border-radius:14px;background:none;cursor:pointer;line-height:0;transition:transform .1s}
+.ipick button:hover{transform:scale(1.08)}
+.ipick button.on{border-color:var(--brand);background:rgba(255,210,63,.15)}
+.ipick .picon{margin:0;width:100%;height:auto}
+.picon{display:inline-block;vertical-align:middle;margin-right:.35em}
+.ipick.compact,#jIcons,#pIcons{grid-template-columns:repeat(8,1fr);gap:4px}
+.ipick.compact button,#jIcons button,#pIcons button{padding:2px;border-radius:12px}

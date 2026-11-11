@@ -42,6 +42,7 @@
   <div class="panel">
     <div class="big-q" id="joinTitle">Join a game</div>
     <label>Your name</label><input id="jn" maxlength="16" placeholder="Your name">
+    <div style="margin-top:14px"><label>Pick your icon</label><div id="jIcons"></div></div>
     <div id="codeWrap" style="margin-top:12px"><label>Code from your friend</label><input id="code" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:24px;text-align:center" placeholder="ABCD"></div>
     <div style="height:14px"></div>
     <button class="go" id="joinBtn">JOIN</button>
@@ -82,6 +83,7 @@
     <button class="go" id="shareInvite">SHARE INVITE LINK</button>
     <div class="linkbox" id="inviteLink"></div>
     <div class="dim small center">Or they go to <b class="playurl"></b> and type <b id="roomCode" class="codeinline">....</b></div>
+    <div style="margin-top:14px"><label>Your icon</label><div id="hIcons"></div></div>
     <div class="status" id="lobbyMsg"><span class="dot"></span>Waiting for your friend to join...</div>
   </div>
 
@@ -160,12 +162,13 @@
 
 </div>
 <script src="themes.js"></script>
+<script src="icons.js"></script>
 <script>
 // --- state
 const $ = id => document.getElementById(id);
 let themeKey = 'nba', index, used = [], usedIds = new Set(), turn = 0, timeLeft = 0, turnTime = 7, timer, last, names = ['Player 1', 'Player 2'], wins = [0, 0], starter = 0;
 let mode = 'local', conn = null, peer = null, me = 0, guestName = 'Player 2', running = false;
-let target = 0, champDone = false;
+let target = 0, champDone = false, icons = null; // icons only in online games
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PREFIX = 'quickgame-x7-';
 
@@ -271,14 +274,14 @@ function startSetup(m) {
   $('start').disabled = host;
   $('start').textContent = host ? 'WAITING FOR FRIEND...' : 'START';
   show('setup');
-  if (host) hostRoom();
+  if (host) { iconPicker($('hIcons')); hostRoom(); }
 }
 
 // --- online: host
 function hostRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('roomCode').textContent = code;
-  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play.html').replace(/^https?:\/\//, ''));
+  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + (/\.ek\//i.test(SITE) ? 'play.html' : 'play')).replace(/^https?:\/\//, ''));
   const link = SITE + '#j=' + code;
   $('inviteLink').textContent = link.replace(/^https?:\/\//, '');
   $('shareInvite').onclick = async () => {
@@ -300,6 +303,7 @@ function setStatus(t, ok) { $('lobbyMsg').innerHTML = `<span class="dot ${ok ? '
 
 // --- online: guest
 function openJoin(code) {
+  iconPicker($('jIcons'));
   leaveRoom();
   $('jn').value = savedName();
   $('code').value = code;
@@ -320,7 +324,7 @@ function joinRoom() {
   peer.on('error', e => { $('codeWrap').style.display = ''; $('joinMsg').textContent = e.type === 'peer-unavailable' ? "No game with that code is open. Check it with your friend." : 'Connection problem: ' + e.type; });
   peer.on('open', () => {
     conn = peer.connect(PREFIX + code, {reliable: true});
-    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name}); $('waitMsg').textContent = "You're in! Waiting for your friend to press START..."; show('wait'); });
+    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name, icon: myIcon()}); $('waitMsg').textContent = "You're in! Waiting for your friend to press START..."; show('wait'); });
     conn.on('data', onData);
     conn.on('close', () => { conn = null; dropped(); });
   });
@@ -356,11 +360,11 @@ function dropped() {
 function onData(m) {
   if (m.t === 'full') { $('joinMsg').textContent = 'That room already has two players.'; return; }
   if (mode === 'host') {
-    if (m.t === 'hello') { guestName = m.name; setStatus(`${m.name} joined! Pick a category and press START.`, true); $('start').disabled = false; $('start').textContent = 'START'; toast(`${m.name} joined`); }
+    if (m.t === 'hello') { guestName = m.name; icons = [myIcon(), (+m.icon || 0) % ICON_COUNT]; setStatus(`${m.name} joined! Pick a category and press START.`, true); $('start').disabled = false; $('start').textContent = 'START'; toast(`${m.name} joined`); }
     if (m.t === 'live' && turn === 1 && running) updateLive(m.v);
     if (m.t === 'submit' && turn === 1 && running) submit(m.v);
   } else {
-    if (m.t === 'turn') { ({themeKey, names, wins, turn, turnTime, target} = m); THEMES[themeKey] = m.theme; applyUsed(m.used); beginTurn(); }
+    if (m.t === 'turn') { ({themeKey, names, wins, turn, turnTime, target} = m); icons = m.icons || null; THEMES[themeKey] = m.theme; applyUsed(m.used); beginTurn(); }
     if (m.t === 'live') updateLive(m.v);
     if (m.t === 'over') { clearInterval(timer); running = false; ({wins, names, target, champDone} = m); applyUsed(m.used); showOver(m.w, m.why, m.missed); }
     if (m.t === 'menu') { show('wait'); $('waitMsg').textContent = 'The host is picking a new theme...'; }
@@ -384,7 +388,7 @@ function nextTurn() {
   const base = +$('secs').value;
   const shrink = $('speed').value === '1' ? Math.floor(used.length / 2) * 0.25 : 0;
   turnTime = Math.max(2, base - shrink);
-  send({t: 'turn', themeKey, theme: THEMES[themeKey], names, wins, turn, turnTime, used, target});
+  send({t: 'turn', themeKey, theme: THEMES[themeKey], names, icons, wins, turn, turnTime, used, target});
   beginTurn();
 }
 
@@ -392,7 +396,7 @@ function beginTurn() {
   running = true;
   timeLeft = turnTime;
   $('themeName').textContent = THEMES[themeKey].name;
-  $('pn1').textContent = names[0]; $('pn2').textContent = names[1];
+  $('pn1').innerHTML = (icons ? iconSVG(icons[0], 28) : '') + esc(names[0]); $('pn2').innerHTML = (icons ? iconSVG(icons[1], 28) : '') + esc(names[1]);
   $('w1').textContent = wins[0] + (target ? ` / ${target}` : ''); $('w2').textContent = wins[1] + (target ? ` / ${target}` : '');
   $('used').innerHTML = [...used].reverse().map(u => `<span class="chip ${u.by ? 'b' : 'a'}">${u.label}</span>`).join('');
   $('msg').textContent = used.length && used[used.length - 1].note || '';

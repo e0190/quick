@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
+<script src="icons.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
     <label>Code from your friend</label>
     <input id="code" maxlength="4" placeholder="ABCD" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
       style="text-transform:uppercase;letter-spacing:10px;font-size:40px;text-align:center;font-family:'Archivo Black',sans-serif;padding:16px">
+    <div style="margin-top:14px"><label>Pick your icon</label><div id="pIcons" class="compact"></div></div>
     <div style="height:18px"></div>
     <button class="go" id="go" style="font-size:30px;padding:22px">JOIN</button>
     <div class="msg center" id="msg"></div>
@@ -30,6 +32,7 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+iconPicker($('pIcons'));
 try { $('name').value = localStorage.getItem('quick_name') || ''; } catch (e) {}
 const pre = (function () { const s = new URLSearchParams(String(location.hash).replace(/^#/, '')).get('j') || new URLSearchParams(location.search).get('j'); return s; })();
 if (pre) $('code').value = pre.toUpperCase();
