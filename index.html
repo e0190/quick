@@ -54,9 +54,9 @@
     <div class="used" id="mkList"></div>
   </div>
   <div class="panel">
-    <label>Too many to type? Let Claude write the list</label>
-    <div class="dim small" style="margin-bottom:10px">Copy this, paste it into Claude, then paste Claude's answer into the answer box above.</div>
-    <button class="go alt" id="mkPrompt" style="font-size:16px;padding:12px">COPY PROMPT FOR CLAUDE</button>
+    <label>Too many to type? Let AI write the list</label>
+    <div class="dim small" style="margin-bottom:10px">Copy this, paste it into any AI chat, then paste its answer into the answer box above.</div>
+    <button class="go alt" id="mkPrompt" style="font-size:16px;padding:12px">COPY PROMPT FOR AI</button>
   </div>
   <button class="go" id="mkSave">SAVE CATEGORY</button>
   <div class="msg center" id="mkMsg"></div>
@@ -228,7 +228,7 @@ $('mkAdd').addEventListener('paste', e => {
 $('mkPrompt').onclick = async () => {
   const cat = $('mkName').value.trim() || '[YOUR CATEGORY]';
   const p = `Make a category for my word game. Category: ${cat}\n\nList EVERY valid answer you can think of (at least 60 if the category allows). Only answers that are definitely correct. One answer per line. If an answer has other common names or spellings, put them on the same line separated by | (example: Spider-Man|Spiderman|Peter Parker). No numbering, no commentary.\n\nFormat it inside one code block like this:\nName: ${cat}\nAnswer one\nAnswer two|Other spelling`;
-  toast((await copyText(p)) ? 'Prompt copied. Paste it into Claude.' : 'Could not copy, sorry.');
+  toast((await copyText(p)) ? 'Prompt copied. Paste it into any AI chat.' : 'Could not copy, sorry.');
 };
 $('mkSave').onclick = () => {
   const name = $('mkName').value.trim();
