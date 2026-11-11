@@ -53,6 +53,8 @@
 .lgo{font-size:24px;font-weight:600;line-height:1.35}
 .lgo b{font-weight:800;text-decoration:underline;word-break:break-all}
 .lcode{flex:1;text-align:center;font-family:'Archivo Black',sans-serif;font-size:110px;line-height:1;letter-spacing:10px;color:#fff;text-shadow:4px 4px 0 #c45a00,8px 8px 0 rgba(0,0,0,.18)}
+.lside{display:flex;flex-direction:column;gap:10px;flex:none;align-items:center}
+.lcredit{text-align:center;color:var(--dim);font-size:11px;opacity:.6;margin-top:28px}
 .llink{background:none;border:0;color:#1a1300;font:700 16px Inter,sans-serif;text-decoration:underline;cursor:pointer;flex:none}
 .lmid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;margin-bottom:26px}
 .lcount{display:flex;align-items:center;gap:10px;font-family:'Archivo Black',sans-serif;font-size:40px;justify-self:center}
@@ -70,6 +72,7 @@
 </style>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 </head>
 <body>
 <div class="wrap" id="wrap">
@@ -114,7 +117,7 @@
     <div class="lqr" id="lqr" title="Scan to join"></div>
     <div class="lgo">Go to <b class="playurl"></b><br>and enter the code:</div>
     <div class="lcode" id="hcode">....</div>
-    <button class="llink" id="shareT" type="button">Copy join<br>link</button>
+    <div class="lside"><button class="llink" id="shareT" type="button">Copy join link</button><button class="llink" id="musicT" type="button">Music: on</button></div>
     <span id="hurl" hidden></span>
   </div>
   <div class="lmid">
@@ -124,6 +127,7 @@
   </div>
   <div class="ltiles" id="roster"></div>
   <div class="lwait" id="rosterMsg">Waiting for players to join...</div>
+  <div class="lcredit">Music played with Salamander Grand Piano (Alexander Holm) and tonejs-instruments bass (Nicholaus Brosowsky) samples, CC BY 3.0.</div>
 </div>
 
 <!-- HOST SHOW -->
@@ -163,6 +167,7 @@
 </div>
 <script src="themes.js"></script>
 <script src="icons.js"></script>
+<script src="music.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const PREFIX = 'quicktourney-x7-';
@@ -198,7 +203,9 @@ function drawThemes() {
   }
 }
 
-$('openRoom').onclick = () => { $('wrap').classList.add('wide'); show('hlobby'); openRoom(); };
+$('openRoom').onclick = () => { $('wrap').classList.add('wide'); show('hlobby'); openRoom(); Music.start(); paintMusic(); };
+function paintMusic() { $('musicT').textContent = Music.muted ? 'Music: off' : 'Music: on'; }
+$('musicT').onclick = () => { Music.toggle(); paintMusic(); };
 function openRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('hcode').textContent = code;
@@ -258,6 +265,7 @@ function drawRoster() {
 
 $('startT').onclick = () => {
   if (players.size < 2) return;
+  Music.stop();
   started = true;
   order = [...players.keys()].sort(() => Math.random() - .5);
   let size = 2; while (size < order.length) size *= 2;
