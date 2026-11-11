@@ -12,29 +12,69 @@
 <body>
 <div class="wrap">
 
-<!-- SETUP -->
-<div id="setup">
+<!-- HOME -->
+<div id="home">
   <h1>QUICK!</h1>
-  <p class="sub">Pick a theme. Take turns naming something in it. Too slow, a repeat, or a wrong answer and you lose.</p>
-  <a href="tournament.html" class="panel" style="display:block;text-decoration:none;color:var(--text);border-color:rgba(255,210,63,.4)"><b style="color:var(--brand);font-family:Archivo Black,sans-serif;font-size:20px">TOURNAMENT MODE</b><br><span style="color:var(--dim)">2 to 16 players, brackets, a host screen for the TV and everyone plays on their phone</span></a>
-  <div class="panel">
-    <label>How are you playing?</label>
-    <div class="themes" id="modes">
-      <button class="theme on" data-m="local">Same device<small>pass the keyboard</small></button>
-      <button class="theme" data-m="host">Host online<small>get a room code</small></button>
-      <button class="theme" data-m="join">Join online<small>enter a code</small></button>
-    </div>
+  <p class="sub">Take turns naming things in a category. Too slow, a repeat or a wrong answer and you lose.</p>
+  <div class="cards">
+    <button class="card" id="goLocal"><b>Play here</b><span>Two players, one computer. Take turns at the keyboard.</span></button>
+    <button class="card" id="goOnline"><b>Play a friend online</b><span>You each use your own phone or computer. Send them a link.</span></button>
+    <a class="card" href="tournament.html"><b>Tournament</b><span>3 or more players with a bracket. Best on a TV with phones.</span></a>
   </div>
-  <div class="panel" id="joinPanel" style="display:none">
-    <div class="row">
-      <div><label>Your name</label><input id="jn" value="Player 2" maxlength="16"></div>
-      <div><label>Room code</label><input id="code" maxlength="4" style="text-transform:uppercase" placeholder="ABCD"></div>
-    </div>
-    <div style="height:12px"></div>
+  <button class="go alt" id="goMaker" style="margin-top:6px">MAKE YOUR OWN CATEGORY</button>
+  <p class="center dim small" style="margin-top:18px">Got a code from a friend? <a href="#" id="goJoin">Type it here</a></p>
+</div>
+
+<!-- JOIN (from a link or typed code) -->
+<div id="join" class="hidden">
+  <a href="#" class="back" data-home>Back</a>
+  <h1>QUICK!</h1>
+  <div class="panel">
+    <div class="big-q" id="joinTitle">Join a game</div>
+    <label>Your name</label><input id="jn" maxlength="16" placeholder="Your name">
+    <div id="codeWrap" style="margin-top:12px"><label>Code from your friend</label><input id="code" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:24px;text-align:center" placeholder="ABCD"></div>
+    <div style="height:14px"></div>
     <button class="go" id="joinBtn">JOIN</button>
     <div class="msg" id="joinMsg"></div>
   </div>
-  <div id="hostBits">
+</div>
+
+<!-- CATEGORY MAKER -->
+<div id="maker" class="hidden">
+  <a href="#" class="back" id="makerBack">Back</a>
+  <h2 class="title2">Make a category</h2>
+  <div class="panel">
+    <label>1. Name it</label>
+    <input id="mkName" maxlength="40" placeholder="e.g. Pizza Toppings">
+  </div>
+  <div class="panel">
+    <label>2. Add answers <span id="mkCount" class="pill">0</span></label>
+    <input id="mkAdd" placeholder="Type an answer and press Enter">
+    <div class="dim small" style="margin:8px 0 10px">Tip: allow other spellings with a <b>|</b>, like <i>Spider-Man|Spiderman</i>. Or paste a whole list (one per line, or separated by commas).</div>
+    <div class="used" id="mkList"></div>
+  </div>
+  <div class="panel">
+    <label>Too many to type? Let Claude write the list</label>
+    <div class="dim small" style="margin-bottom:10px">Copy this, paste it into Claude, then paste Claude's answer into the answer box above.</div>
+    <button class="go alt" id="mkPrompt" style="font-size:16px;padding:12px">COPY PROMPT FOR CLAUDE</button>
+  </div>
+  <button class="go" id="mkSave">SAVE CATEGORY</button>
+  <div class="msg center" id="mkMsg"></div>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="hidden">
+  <a href="#" class="back" data-home>Back</a>
+  <h2 class="title2" id="setupTitle">Play here</h2>
+
+  <div class="panel invite" id="invite" style="display:none">
+    <label>Invite your friend</label>
+    <button class="go" id="shareInvite">SHARE INVITE LINK</button>
+    <div class="linkbox" id="inviteLink"></div>
+    <div class="dim small center">Or they open the site, tap "Type it here" and enter <b id="roomCode" class="codeinline">....</b></div>
+    <div class="status" id="lobbyMsg"><span class="dot"></span>Waiting for your friend to join...</div>
+  </div>
+
   <div class="panel">
     <div class="row">
       <div><label id="l1">Player 1</label><input id="n1" value="Player 1" maxlength="16"></div>
@@ -42,40 +82,23 @@
     </div>
   </div>
   <div class="panel">
-    <label>Theme</label>
+    <div class="q" style="font-weight:800;font-size:16px;margin-bottom:10px">Pick a category</div>
     <div class="themes" id="themes"></div>
-    <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--dim)">Add your own category</summary>
-      <p style="color:var(--dim);font-size:14px">Paste a category (first line <b>Name: ...</b>, then one answer per line; put other accepted spellings after a <b>|</b>, like <i>Spider-Man|Spiderman|Peter Parker</i>).</p>
-      <textarea id="customText" rows="7" style="width:100%;padding:10px;font-size:15px;border-radius:8px;border:1px solid var(--line);background:#0d0f13;color:var(--text)" placeholder="Name: Marvel Heroes&#10;Spider-Man|Spiderman&#10;Iron Man&#10;Thor"></textarea>
-      <div style="height:8px"></div>
-      <button class="go alt" id="addCustom" style="font-size:16px;padding:10px">ADD CATEGORY</button>
-      <div class="msg" id="customMsg"></div>
-    </details>
+    <div class="setting" style="margin-top:16px"><div class="q">Same category every game, or mix it up?</div>
+      <select class="seg" id="mix"><option value="0" selected>Same (the one picked above)</option><option value="1">Mix it up (random every game)</option></select></div>
   </div>
   <div class="panel">
-    <div class="row">
-      <div><label>Match type</label>
-        <select id="champ"><option value="0">Single games</option><option value="3" selected>Championship: first to 3</option><option value="5">Championship: first to 5</option><option value="7">Championship: first to 7</option></select></div>
-      <div><label>Category each game</label>
-        <select id="mix"><option value="0">Keep my pick</option><option value="1">Random every game</option></select></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="row">
-      <div><label>Seconds per turn</label>
-        <select id="secs"><option>3</option><option>5</option><option selected>7</option><option>10</option><option>15</option></select></div>
-      <div><label>Speed-up</label>
-        <select id="speed"><option value="0">Off</option><option value="1" selected>Shrinks each round</option></select></div>
-    </div>
-  </div>
-  <div class="panel" id="lobby" style="display:none;text-align:center">
-    <label>Room code - send it to your friend</label>
-    <div style="font-size:56px;font-weight:900;letter-spacing:8px" id="roomCode">....</div>
-    <div class="msg" id="lobbyMsg" style="color:var(--dim)">Waiting for someone to join...</div>
+    <div class="setting"><div class="q">How long is the match?</div>
+      <select class="seg" id="champ"><option value="0">One game (rematch any time)</option><option value="3" selected>First to 3 (wins the match)</option><option value="5">First to 5 (longer match)</option></select></div>
+    <div class="setting"><div class="q">How long does each player get to answer?</div>
+      <select class="seg" id="secs"><option value="10">Relaxed (10 seconds)</option><option value="7" selected>Normal (7 seconds)</option><option value="5">Fast (5 seconds)</option><option value="3">Crazy (3 seconds)</option></select></div>
+    <div class="setting"><div class="q">Get faster as the game goes on?</div>
+      <select class="seg" id="speed"><option value="1" selected>Yes (a little less time each turn)</option><option value="0">No (same time every turn)</option></select></div>
   </div>
   <button class="go" id="start">START</button>
-  </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <!-- GUEST WAITING -->
 <div id="wait" class="hidden">
@@ -118,7 +141,7 @@
     </div>
     <div class="btns">
       <button class="go" id="again">REMATCH</button>
-      <button class="go alt" id="menu">CHANGE THEME</button>
+      <button class="go alt" id="menu">CHANGE CATEGORY</button>
     </div>
   </div>
   <div class="panel"><label>Answers this round</label><div class="used" id="used2"></div></div>
@@ -132,71 +155,128 @@
 const $ = id => document.getElementById(id);
 let themeKey = 'nba', index, used = [], usedIds = new Set(), turn = 0, timeLeft = 0, turnTime = 7, timer, last, names = ['Player 1', 'Player 2'], wins = [0, 0], starter = 0;
 let mode = 'local', conn = null, peer = null, me = 0, guestName = 'Player 2', running = false;
-
 let target = 0, champDone = false;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PREFIX = 'quickgame-x7-';
+
+function show(id) { ['home', 'join', 'maker', 'setup', 'wait', 'game', 'over'].forEach(s => $(s).classList.toggle('hidden', s !== id)); window.scrollTo(0, 0); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2600); }
+const online = () => mode === 'host' || mode === 'guest';
+const myTurn = () => !online() || turn === me;
+const send = m => { if (conn && conn.open) conn.send(m); };
+const savedName = () => { try { return localStorage.getItem('quick_name') || ''; } catch (e) { return ''; } };
+const saveName = n => { try { localStorage.setItem('quick_name', n); } catch (e) {} };
+
+// --- categories grid
+loadCustom();
 const themesEl = $('themes');
 function drawThemes() {
   themesEl.innerHTML = '';
   for (const [k, t] of Object.entries(THEMES)) {
     const b = document.createElement('button');
+    const mine = k.startsWith('c_');
     b.className = 'theme' + (k === themeKey ? ' on' : '');
-    b.innerHTML = `${t.name}<small>${t.hint}${k.startsWith('c_') ? ' · <u data-del>remove</u>' : ''}</small>`;
+    b.innerHTML = `${esc(t.name)}<small>${esc(t.hint)}</small>${mine ? '<span class="tactions"><u data-act="share">Share</u><u data-act="del">Remove</u></span>' : ''}`;
     b.onclick = e => {
-      if (e.target.dataset.del !== undefined) { delete THEMES[k]; saveCustom(); if (themeKey === k) themeKey = 'nba'; return drawThemes(); }
+      const act = e.target.dataset.act;
+      if (act === 'del') { if (!confirm(`Remove "${t.name}"?`)) return; delete THEMES[k]; saveCustom(); if (themeKey === k) themeKey = 'nba'; return drawThemes(); }
+      if (act === 'share') return shareCategory(k);
       themeKey = k; [...themesEl.children].forEach(c => c.classList.remove('on')); b.classList.add('on');
     };
     themesEl.appendChild(b);
   }
+  const add = document.createElement('button');
+  add.className = 'theme addnew';
+  add.innerHTML = '+ Make your own<small>takes a minute</small>';
+  add.onclick = () => openMaker('setup');
+  themesEl.appendChild(add);
 }
-function saveCustom() {
-  const c = Object.fromEntries(Object.entries(THEMES).filter(([k]) => k.startsWith('c_')));
-  try { localStorage.setItem('quick_custom', JSON.stringify(c)); } catch (e) {}
-}
-try { Object.assign(THEMES, JSON.parse(localStorage.getItem('quick_custom') || '{}')); } catch (e) {}
 drawThemes();
-$('addCustom').onclick = () => {
-  const lines = $('customText').value.split('\n').map(l => l.trim()).filter(Boolean);
-  let name = '';
-  if (lines[0] && /^name\s*:/i.test(lines[0])) name = lines.shift().replace(/^name\s*:/i, '').trim();
-  if (lines[0] && /^hint\s*:/i.test(lines[0])) lines.shift();
-  const items = lines.map(l => l.replace(/^[-*\d.)\s]+/, '').trim()).filter(l => norm(l));
-  if (!name) return $('customMsg').textContent = 'First line needs to be "Name: something".';
-  if (items.length < 10) return $('customMsg').textContent = 'Needs at least 10 answers.';
-  const key = 'c_' + norm(name);
-  THEMES[key] = { name, hint: `${items.length} answers · custom`, items };
-  themeKey = key; saveCustom(); drawThemes();
-  $('customText').value = '';
-  $('customMsg').textContent = `Added ${name} with ${items.length} answers.`;
+segmentize();
+
+async function shareCategory(k) {
+  toast('Making a short link...');
+  const long = SITE + '?cat=' + await packCategory(THEMES[k]);
+  const url = await shorten(long);
+  const how = await shareOrCopy(url, `QUICK! category: ${THEMES[k].name}`);
+  if (how === 'copied') toast('Link copied. Paste it to a friend and it adds the category for them.');
+  else if (how === 'shown') prompt('Copy this link:', url);
+}
+
+// --- category maker
+let mkItems = [], mkFrom = 'home';
+function openMaker(from) { mkFrom = from; mkItems = []; $('mkName').value = ''; $('mkMsg').textContent = ''; drawMk(); show('maker'); $('mkName').focus(); }
+function drawMk() {
+  $('mkCount').textContent = mkItems.length;
+  $('mkList').innerHTML = mkItems.map((x, i) => `<span class="chip rm" data-i="${i}" title="Click to remove">${esc(x.split('|')[0])}${x.includes('|') ? ` <span class="dim">+${x.split('|').length - 1}</span>` : ''} <b>x</b></span>`).join('');
+}
+$('mkList').onclick = e => { const c = e.target.closest('[data-i]'); if (c) { mkItems.splice(+c.dataset.i, 1); drawMk(); } };
+function mkTake(text) {
+  const { name, items } = parseAnswers(text);
+  if (name && !$('mkName').value.trim()) $('mkName').value = name;
+  const have = new Set(mkItems.map(x => norm(x.split('|')[0])));
+  let added = 0;
+  for (const it of items) { const k = norm(it.split('|')[0]); if (!have.has(k)) { have.add(k); mkItems.push(it); added++; } }
+  drawMk();
+  return added;
+}
+$('mkAdd').addEventListener('keydown', e => { if (e.key === 'Enter') { mkTake($('mkAdd').value); $('mkAdd').value = ''; } });
+$('mkAdd').addEventListener('paste', e => {
+  const t = (e.clipboardData || window.clipboardData).getData('text');
+  if (t.includes('\n') || t.includes(',')) { e.preventDefault(); const n = mkTake(t); toast(`Added ${n} answers`); }
+});
+$('mkPrompt').onclick = async () => {
+  const cat = $('mkName').value.trim() || '[YOUR CATEGORY]';
+  const p = `Make a category for my word game. Category: ${cat}\n\nList EVERY valid answer you can think of (at least 60 if the category allows). Only answers that are definitely correct. One answer per line. If an answer has other common names or spellings, put them on the same line separated by | (example: Spider-Man|Spiderman|Peter Parker). No numbering, no commentary.\n\nFormat it inside one code block like this:\nName: ${cat}\nAnswer one\nAnswer two|Other spelling`;
+  toast((await copyText(p)) ? 'Prompt copied. Paste it into Claude.' : 'Could not copy, sorry.');
 };
-
-function show(id) { ['setup', 'wait', 'game', 'over'].forEach(s => $(s).classList.toggle('hidden', s !== id)); }
-const online = () => mode === 'host' || mode === 'guest';
-const myTurn = () => !online() || turn === me;
-const send = m => { if (conn && conn.open) conn.send(m); };
-
-// --- mode picker
-for (const b of $('modes').children) b.onclick = () => {
-  if (peer) { peer.destroy(); peer = null; conn = null; }
-  [...$('modes').children].forEach(c => c.classList.remove('on')); b.classList.add('on');
-  const m = b.dataset.m;
-  mode = m === 'join' ? 'join' : m;
-  $('joinPanel').style.display = m === 'join' ? '' : 'none';
-  $('hostBits').style.display = m === 'join' ? 'none' : '';
-  $('n2wrap').style.display = m === 'host' ? 'none' : '';
-  $('l1').textContent = m === 'host' ? 'Your name' : 'Player 1';
-  $('lobby').style.display = m === 'host' ? '' : 'none';
-  $('start').disabled = m === 'host';
-  $('start').style.opacity = m === 'host' ? .4 : 1;
-  if (m === 'host') hostRoom();
+$('mkSave').onclick = () => {
+  const name = $('mkName').value.trim();
+  if (!name) return $('mkMsg').textContent = 'Give it a name first.';
+  if (mkItems.length < 5) return $('mkMsg').textContent = `Add at least 5 answers (you have ${mkItems.length}).`;
+  themeKey = addCustom(name, mkItems);
+  drawThemes();
+  toast(`Saved "${name}". Use Share on its button to send it to friends.`);
+  if (mkFrom === 'setup') show('setup'); else startSetup('local');
 };
+$('makerBack').onclick = e => { e.preventDefault(); show(mkFrom === 'setup' ? 'setup' : 'home'); };
+$('goMaker').onclick = () => openMaker('home');
 
-const PREFIX = 'quickgame-x7-';
+// --- navigation
+document.querySelectorAll('[data-home]').forEach(a => a.onclick = e => { e.preventDefault(); leaveRoom(); show('home'); });
+$('goLocal').onclick = () => startSetup('local');
+$('goOnline').onclick = () => startSetup('host');
+$('goJoin').onclick = e => { e.preventDefault(); openJoin(''); };
+
+function leaveRoom() { if (peer) { peer.destroy(); peer = null; conn = null; } mode = 'local'; }
+function startSetup(m) {
+  leaveRoom();
+  mode = m;
+  const host = m === 'host';
+  $('setupTitle').textContent = host ? 'Play a friend online' : 'Play here';
+  $('invite').style.display = host ? '' : 'none';
+  $('n2wrap').style.display = host ? 'none' : '';
+  $('l1').textContent = host ? 'Your name' : 'Player 1';
+  if (host && savedName()) $('n1').value = savedName();
+  $('start').disabled = host;
+  $('start').textContent = host ? 'WAITING FOR FRIEND...' : 'START';
+  show('setup');
+  if (host) hostRoom();
+}
+
+// --- online: host
 function hostRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('roomCode').textContent = code;
-  $('lobbyMsg').textContent = 'Waiting for someone to join...';
+  const link = SITE + '?j=' + code;
+  $('inviteLink').textContent = link.replace(/^https?:\/\//, '');
+  $('shareInvite').onclick = async () => {
+    const how = await shareOrCopy(link, 'Play QUICK! with me');
+    if (how === 'copied') toast('Invite link copied. Send it to your friend.');
+  };
+  setStatus('Waiting for your friend to join...', false);
   peer = new Peer(PREFIX + code);
-  peer.on('error', e => { if (e.type === 'unavailable-id') hostRoom(); else $('lobbyMsg').textContent = 'Connection error: ' + e.type; });
+  peer.on('error', e => { if (e.type === 'unavailable-id') hostRoom(); else setStatus('Connection problem (' + e.type + '). Go back and try again.', false); });
   peer.on('connection', c => {
     if (conn && conn.open) { c.on('open', () => { c.send({t: 'full'}); setTimeout(() => c.close(), 300); }); return; }
     conn = c; me = 0;
@@ -204,34 +284,67 @@ function hostRoom() {
     c.on('close', () => { conn = null; dropped(); });
   });
 }
+function setStatus(t, ok) { $('lobbyMsg').innerHTML = `<span class="dot ${ok ? 'ok' : ''}"></span>${esc(t)}`; }
+
+// --- online: guest
+function openJoin(code) {
+  leaveRoom();
+  $('jn').value = savedName();
+  $('code').value = code;
+  $('codeWrap').style.display = code ? 'none' : '';
+  $('joinTitle').textContent = code ? "You've been invited to a game" : 'Join a game';
+  $('joinMsg').textContent = '';
+  show('join');
+  ($('jn').value ? (code ? $('joinBtn') : $('code')) : $('jn')).focus();
+}
 function joinRoom() {
-  const code = $('code').value.trim().toUpperCase();
-  if (code.length !== 4) return $('joinMsg').textContent = 'Codes are 4 letters.';
+  const name = $('jn').value.trim(), code = $('code').value.trim().toUpperCase();
+  if (!name) { $('joinMsg').textContent = 'Type your name.'; return $('jn').focus(); }
+  if (code.length !== 4) return $('joinMsg').textContent = 'The code is 4 letters.';
+  saveName(name);
   $('joinMsg').textContent = 'Connecting...';
   if (peer) peer.destroy();
   peer = new Peer();
-  peer.on('error', e => $('joinMsg').textContent = e.type === 'peer-unavailable' ? 'No room with that code.' : 'Connection error: ' + e.type);
+  peer.on('error', e => $('joinMsg').textContent = e.type === 'peer-unavailable' ? "That game isn't open anymore. Ask your friend for a new link." : 'Connection problem: ' + e.type);
   peer.on('open', () => {
     conn = peer.connect(PREFIX + code, {reliable: true});
-    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name: $('jn').value.trim() || 'Player 2'}); show('wait'); });
+    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name}); $('waitMsg').textContent = "You're in! Waiting for your friend to press START..."; show('wait'); });
     conn.on('data', onData);
     conn.on('close', () => { conn = null; dropped(); });
   });
 }
 $('joinBtn').onclick = joinRoom;
 $('code').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+$('jn').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
 function dropped() {
   clearInterval(timer); running = false;
   alert('The other player disconnected.');
-  location.reload();
+  location.href = SITE;
 }
+
+// --- links: ?j=CODE joins, ?cat=... adds a shared category
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const j = q.get('j') || q.get('join');
+  if (j) { history.replaceState(null, '', SITE); return openJoin(j.toUpperCase()); }
+  const cat = q.get('cat');
+  if (cat) {
+    history.replaceState(null, '', SITE);
+    try {
+      const { name, items } = await unpackCategory(cat);
+      themeKey = addCustom(name, items); drawThemes();
+      startSetup('local');
+      toast(`Added "${name}" (${items.length} answers). It's selected below.`);
+    } catch (e) { toast("That category link didn't work."); }
+  }
+})();
 
 // --- messages
 function onData(m) {
   if (m.t === 'full') { $('joinMsg').textContent = 'That room already has two players.'; return; }
   if (mode === 'host') {
-    if (m.t === 'hello') { guestName = m.name; $('lobbyMsg').textContent = `${m.name} joined. Pick a theme and press START.`; $('start').disabled = false; $('start').style.opacity = 1; }
+    if (m.t === 'hello') { guestName = m.name; setStatus(`${m.name} joined! Pick a category and press START.`, true); $('start').disabled = false; $('start').textContent = 'START'; toast(`${m.name} joined`); }
     if (m.t === 'live' && turn === 1 && running) { $('answer').value = m.v; updateLive(); }
     if (m.t === 'submit' && turn === 1 && running) submit(m.v);
   } else {
@@ -372,7 +485,7 @@ $('answer').addEventListener('keydown', e => {
   if (mode === 'guest') { send({t: 'submit', v: $('answer').value}); $('answer').disabled = true; }
   else submit($('answer').value);
 });
-$('start').onclick = () => { if ($('start').disabled) return; wins = [0, 0]; starter = 0; target = +$('champ').value; champDone = false; startRound(); };
+$('start').onclick = () => { if ($('start').disabled) return; if (mode === 'host') saveName($('n1').value.trim()); wins = [0, 0]; starter = 0; target = +$('champ').value; champDone = false; startRound(); };
 $('again').onclick = () => { if (champDone) { wins = [0, 0]; champDone = false; } startRound(); };
 $('menu').onclick = () => { send({t: 'menu'}); show('setup'); };
 </script>

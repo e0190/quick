@@ -49,49 +49,48 @@
 
 <!-- PICK ROLE -->
 <div id="pick">
+  <a href="index.html" class="back">Back</a>
   <h1>QUICK!</h1>
-  <p class="sub">Tournament mode, for 2 to 16 players. Put the host screen on a laptop or TV, then everyone joins on their own phone.</p>
-  <div class="big2">
-    <button class="theme" id="beHost">Host screen<small>shows the bracket and every match</small></button>
-    <button class="theme" id="beJoin">Join as player<small>play on your phone</small></button>
+  <p class="sub">A bracket tournament for 3 or more players. One screen everyone can see runs it, and each player plays on their own phone.</p>
+  <div class="cards">
+    <button class="card" id="beHost"><b>Start a tournament</b><span>Do this on the laptop or TV everyone will watch. You'll get a link to send the players.</span></button>
+    <button class="card" id="beJoin"><b>I'm a player</b><span>Got a code instead of a link? Tap here on your phone.</span></button>
   </div>
-  <p class="center" style="margin-top:22px"><a href="index.html" style="color:var(--dim)">Back to a normal 2-player game</a></p>
 </div>
 
 <!-- HOST SETUP -->
 <div id="hsetup" class="hidden">
-  <h1>QUICK!</h1>
-  <p class="sub">Set up the tournament, then open the room.</p>
+  <a href="#" class="back" data-pick>Back</a>
+  <h2 class="title2">Start a tournament</h2>
   <div class="panel">
-    <label>Category</label>
+    <div class="q" style="font-weight:800;font-size:16px;margin-bottom:10px">Pick a category</div>
     <div class="themes" id="themes"></div>
+    <div class="setting" style="margin-top:16px"><div class="q">Same category every game, or mix it up?</div>
+      <select class="seg" id="mix"><option value="0">Same (the one picked above)</option><option value="1" selected>Mix it up (random every game)</option></select></div>
   </div>
   <div class="panel">
-    <div class="row">
-      <div><label>Category each game</label>
-        <select id="mix"><option value="0">Keep my pick</option><option value="1" selected>Random every game</option></select></div>
-      <div><label>Each match is</label>
-        <select id="bo"><option value="1">1 game</option><option value="2" selected>Best of 3</option><option value="3">Best of 5</option></select></div>
-    </div>
-    <div style="height:12px"></div>
-    <div class="row">
-      <div><label>Seconds per turn</label>
-        <select id="secs"><option>3</option><option>5</option><option selected>7</option><option>10</option><option>15</option></select></div>
-      <div><label>Speed-up</label>
-        <select id="speed"><option value="0">Off</option><option value="1" selected>Shrinks each round</option></select></div>
-    </div>
+    <div class="setting"><div class="q">Most players allowed in</div>
+      <select class="seg" id="max"><option value="0" selected>No limit</option><option value="4">4</option><option value="8">8</option><option value="16">16</option><option value="32">32</option></select></div>
+    <div class="setting"><div class="q">How many wins does a player need to win a match?</div>
+      <select class="seg" id="bo"><option value="1">1 (one game decides it)</option><option value="2" selected>2 (best of 3)</option><option value="3">3 (best of 5)</option></select></div>
+    <div class="setting"><div class="q">How long does each player get to answer?</div>
+      <select class="seg" id="secs"><option value="10">Relaxed (10 seconds)</option><option value="7" selected>Normal (7 seconds)</option><option value="5">Fast (5 seconds)</option><option value="3">Crazy (3 seconds)</option></select></div>
+    <div class="setting"><div class="q">Get faster as the game goes on?</div>
+      <select class="seg" id="speed"><option value="1" selected>Yes (a little less time each turn)</option><option value="0">No (same time every turn)</option></select></div>
   </div>
-  <button class="go" id="openRoom">OPEN ROOM</button>
+  <button class="go" id="openRoom">NEXT: INVITE PLAYERS</button>
 </div>
 
 <!-- HOST LOBBY -->
 <div id="hlobby" class="hidden">
-  <div class="panel center">
-    <label>Join on your phone with code</label>
+  <div class="panel center invite">
+    <label>Players: open this link on your phone</label>
+    <div class="linkbox" id="hurl" style="font-size:22px"></div>
+    <button class="go" id="shareT" style="max-width:420px;margin:6px auto 10px;display:block">SHARE INVITE LINK</button>
+    <div class="dim">or go to the site, tap Tournament, then "I'm a player", and type</div>
     <div class="code" id="hcode">....</div>
-    <div class="joinurl" id="hurl"></div>
     <div class="roster" id="roster"></div>
-    <div class="dim" id="rosterMsg" style="margin-top:14px">Waiting for players...</div>
+    <div class="status" id="rosterMsg"><span class="dot"></span>Waiting for players...</div>
   </div>
   <button class="go" id="startT" disabled>START TOURNAMENT</button>
 </div>
@@ -105,17 +104,18 @@
 
 <!-- PLAYER JOIN -->
 <div id="pjoin" class="hidden">
+  <a href="#" class="back" data-pick>Back</a>
   <h1>QUICK!</h1>
   <div class="panel">
-    <div class="row">
-      <div><label>Your name</label><input id="pname" maxlength="14" placeholder="Name"></div>
-      <div><label>Room code</label><input id="pcode" maxlength="4" style="text-transform:uppercase" placeholder="ABCD"></div>
-    </div>
-    <div style="height:12px"></div>
+    <div class="big-q" id="pTitle">Join a tournament</div>
+    <label>Your name</label><input id="pname" maxlength="14" placeholder="Your name">
+    <div id="pcodeWrap" style="margin-top:12px"><label>Code on the big screen</label><input id="pcode" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:24px;text-align:center" placeholder="ABCD"></div>
+    <div style="height:14px"></div>
     <button class="go" id="pgo">JOIN</button>
     <div class="msg" id="pmsg"></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <!-- PLAYER VIEW -->
 <div id="pview" class="hidden">
@@ -136,12 +136,20 @@ const PREFIX = 'quicktourney-x7-';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function show(id) { ['pick','hsetup','hlobby','hshow','pjoin','pview'].forEach(s => $(s).classList.toggle('hidden', s !== id)); }
-try { Object.assign(THEMES, JSON.parse(localStorage.getItem('quick_custom') || '{}')); } catch (e) {}
+loadCustom();
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2600); }
+document.querySelectorAll('[data-pick]').forEach(a => a.onclick = e => { e.preventDefault(); if (peer) { peer.destroy(); peer = null; } show('pick'); });
 
+segmentize();
 $('beHost').onclick = () => { show('hsetup'); drawThemes(); };
-$('beJoin').onclick = () => { show('pjoin'); $('pname').focus(); };
-const qJoin = new URLSearchParams(location.search).get('join');
-if (qJoin) { $('pcode').value = qJoin.toUpperCase(); show('pjoin'); }
+function openPJoin(code) {
+  $('pcode').value = code; $('pcodeWrap').style.display = code ? 'none' : '';
+  $('pTitle').textContent = code ? "You're invited to a tournament" : 'Join a tournament';
+  show('pjoin'); ($('pname').value ? (code ? $('pgo') : $('pcode')) : $('pname')).focus();
+}
+$('beJoin').onclick = () => openPJoin('');
+const qp = new URLSearchParams(location.search), qJoin = qp.get('j') || qp.get('join');
+if (qJoin) { history.replaceState(null, '', location.pathname); setTimeout(() => openPJoin(qJoin.toUpperCase())); }
 
 /* =================== HOST =================== */
 let themeKey = 'nba', peer, players = new Map(), order = [], rounds = [], cur = null, started = false, timer;
@@ -160,10 +168,11 @@ $('openRoom').onclick = () => { show('hlobby'); openRoom(); };
 function openRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('hcode').textContent = code;
-  const url = location.href.split('?')[0] + '?join=' + code;
-  $('hurl').innerHTML = `or open <b>${esc(url.replace(/^https?:\/\//, ''))}</b>`;
+  const url = SITE + 'tournament.html?j=' + code;
+  $('hurl').textContent = url.replace(/^https?:\/\//, '');
+  $('shareT').onclick = async () => { if ((await shareOrCopy(url, 'Join my QUICK! tournament')) === 'copied') toast('Invite link copied. Send it to the players.'); };
   peer = new Peer(PREFIX + code);
-  peer.on('error', e => { if (e.type === 'unavailable-id') openRoom(); else $('rosterMsg').textContent = 'Connection error: ' + e.type; });
+  peer.on('error', e => { if (e.type === 'unavailable-id') openRoom(); else $('rosterMsg').textContent = 'Connection problem: ' + e.type; });
   peer.on('connection', c => {
     c.on('data', m => onHostData(c, m));
     c.on('close', () => dropPlayer(c.peer));
@@ -172,7 +181,8 @@ function openRoom() {
 function onHostData(c, m) {
   if (m.t === 'hello') {
     if (started) { c.send({t: 'nope', why: 'That tournament already started.'}); return setTimeout(() => c.close(), 300); }
-    if (players.size >= 16) { c.send({t: 'nope', why: 'The tournament is full (16 players).'}); return setTimeout(() => c.close(), 300); }
+    const max = +$('max').value;
+    if (max && players.size >= max) { c.send({t: 'nope', why: `The tournament is full (${max} players).`}); return setTimeout(() => c.close(), 300); }
     let name = (m.name || 'Player').slice(0, 14), n = 2;
     const taken = () => [...players.values()].some(p => p.name.toLowerCase() === name.toLowerCase());
     while (taken()) name = m.name.slice(0, 12) + ' ' + n++;
@@ -199,7 +209,9 @@ function dropPlayer(id) {
 function drawRoster() {
   const list = [...players.values()];
   $('roster').innerHTML = list.map(p => `<span class="chip">${esc(p.name)}</span>`).join('');
-  $('rosterMsg').textContent = list.length ? `${list.length} player${list.length > 1 ? 's' : ''} in. ${list.length < 2 ? 'Need at least 2.' : 'Start when everyone is in.'}` : 'Waiting for players...';
+  const max = +$('max').value, full = max && list.length >= max;
+  const txt = !list.length ? 'Waiting for players...' : `${list.length}${max ? ' of ' + max : ''} player${list.length > 1 ? 's' : ''} in. ${list.length < 2 ? 'Need at least 2.' : full ? "It's full. Press START." : 'Press START when everyone is in.'}`;
+  $('rosterMsg').innerHTML = `<span class="dot${list.length >= 2 ? ' ok' : ''}"></span>${esc(txt)}`;
   $('startT').disabled = list.length < 2;
 }
 

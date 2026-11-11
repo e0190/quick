@@ -67,3 +67,84 @@ function match(index, text) {
   return null;
 }
 
+
+// --- custom categories (saved in this browser)
+function loadCustom() { try { Object.assign(THEMES, JSON.parse(localStorage.getItem('quick_custom') || '{}')); } catch (e) {} }
+function saveCustom() {
+  const c = Object.fromEntries(Object.entries(THEMES).filter(([k]) => k.startsWith('c_')));
+  try { localStorage.setItem('quick_custom', JSON.stringify(c)); } catch (e) {}
+}
+function addCustom(name, items) {
+  const key = 'c_' + norm(name);
+  THEMES[key] = { name, hint: `${items.length} answers · yours`, items };
+  saveCustom();
+  return key;
+}
+// turn pasted text into answers: one per line or comma separated, numbers/bullets ignored
+function parseAnswers(text) {
+  let name = '';
+  let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines[0] && /^name\s*:/i.test(lines[0])) name = lines.shift().replace(/^name\s*:/i, '').trim();
+  lines = lines.filter(l => !/^hint\s*:/i.test(l) && !/^```/.test(l));
+  if (lines.length === 1 && lines[0].includes(',')) lines = lines[0].split(',');
+  const items = lines.map(l => l.replace(/^([-*•]|\d+[.)])\s*/, '').trim()).filter(l => norm(l));
+  return { name, items };
+}
+
+// --- share links: category packed into the URL, then shortened with is.gd
+const SITE = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+async function packCategory(t) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ n: t.name, i: t.items }));
+  const cs = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const buf = new Uint8Array(await new Response(cs).arrayBuffer());
+  let s = ''; buf.forEach(b => s += String.fromCharCode(b));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function unpackCategory(str) {
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  const o = JSON.parse(await new Response(ds).text());
+  return { name: String(o.n).slice(0, 40), items: o.i.map(String).slice(0, 2000) };
+}
+function shorten(url) {
+  return new Promise(resolve => {
+    const cb = 'isgd' + Date.now();
+    const s = document.createElement('script');
+    const done = v => { delete window[cb]; s.remove(); resolve(v); };
+    window[cb] = r => done(r && r.shorturl ? r.shorturl : url);
+    s.onerror = () => done(url);
+    setTimeout(() => window[cb] && done(url), 5000);
+    s.src = 'https://is.gd/create.php?format=json&callback=' + cb + '&url=' + encodeURIComponent(url);
+    document.head.appendChild(s);
+  });
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {} t.remove(); return ok;
+  }
+}
+// share on phones (share sheet), copy on computers
+async function shareOrCopy(url, title) {
+  const touch = matchMedia('(pointer:coarse)').matches;
+  if (touch && navigator.share) { try { await navigator.share({ title, url }); return 'shared'; } catch (e) {} }
+  return (await copyText(url)) ? 'copied' : 'shown';
+}
+
+// --- turn <select class="seg"> into a row of big buttons; "Text (hint)" shows the hint small
+function segmentize() {
+  document.querySelectorAll('select.seg').forEach(sel => {
+    const g = document.createElement('div'); g.className = 'seg';
+    [...sel.options].forEach(o => {
+      const b = document.createElement('button'); b.type = 'button';
+      const m = o.text.match(/^(.*?)\s*\((.*)\)$/);
+      b.innerHTML = m ? `${m[1]}<small>${m[2]}</small>` : o.text;
+      if (o.selected) b.className = 'on';
+      b.onclick = () => { sel.value = o.value; [...g.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); sel.dispatchEvent(new Event('change')); };
+      g.appendChild(b);
+    });
+    sel.style.display = 'none'; sel.after(g);
+  });
+}
