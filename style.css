@@ -114,3 +114,12 @@ a{color:var(--brand)}
 
 /* no preview of what a typo will turn into */
 .guess{display:none!important}
+/* big join button on home */
+.joinbig{display:block;text-align:center;text-decoration:none;margin:0 0 16px;padding:22px 18px;border-radius:20px;background:linear-gradient(135deg,#3fb8ff,#6a5cff);color:#fff;box-shadow:0 6px 0 #2a5fb0,0 14px 34px rgba(63,184,255,.35);transition:transform .08s,box-shadow .08s;animation:glow 2.2s ease-in-out infinite alternate}
+.joinbig b{display:block;font-family:'Archivo Black',sans-serif;font-size:34px;letter-spacing:1px}
+.joinbig span{font-size:16px;opacity:.9;font-weight:600}
+.joinbig:hover{filter:brightness(1.07)}
+.joinbig:active{transform:translateY(4px);box-shadow:0 2px 0 #2a5fb0}
+@keyframes glow{to{box-shadow:0 6px 0 #2a5fb0,0 14px 46px rgba(63,184,255,.6)}}
+.cards.two{grid-template-columns:1fr 1fr}
+@media(max-width:560px){.cards.two{grid-template-columns:1fr}.joinbig b{font-size:28px}}

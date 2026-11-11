@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Join a game - QUICK!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <a href="../" class="back">Home</a>
+  <h1>QUICK!</h1>
+  <div class="panel">
+    <div class="big-q">Join a game</div>
+    <label>Your name</label>
+    <input id="name" maxlength="14" placeholder="Your name" autocomplete="off">
+    <div style="height:14px"></div>
+    <label>Code from your friend</label>
+    <input id="code" maxlength="4" placeholder="ABCD" autocomplete="off"
+      style="text-transform:uppercase;letter-spacing:10px;font-size:40px;text-align:center;font-family:'Archivo Black',sans-serif;padding:16px">
+    <div style="height:18px"></div>
+    <button class="go" id="go" style="font-size:30px;padding:22px">JOIN</button>
+    <div class="msg center" id="msg"></div>
+  </div>
+  <p class="center dim small">Works for 2-player games and tournaments.</p>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+try { $('name').value = localStorage.getItem('quick_name') || ''; } catch (e) {}
+const pre = new URLSearchParams(location.search).get('j');
+if (pre) $('code').value = pre.toUpperCase();
+($('name').value ? $('code') : $('name')).focus();
+
+let peer;
+function go() {
+  const name = $('name').value.trim(), code = $('code').value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  if (!name) { $('msg').textContent = 'Type your name.'; return $('name').focus(); }
+  if (code.length !== 4) { $('msg').textContent = 'The code is 4 letters.'; return $('code').focus(); }
+  try { localStorage.setItem('quick_name', name); } catch (e) {}
+  $('msg').textContent = 'Finding the game...'; $('go').disabled = true;
+  if (peer) peer.destroy();
+  const targets = { 'quickgame-x7-': '../index.html', 'quicktourney-x7-': '../tournament.html' };
+  let misses = 0, done = false;
+  const finish = (page) => {
+    if (done) return; done = true; peer.destroy();
+    if (page) location.href = page + '?j=' + code + '&auto=1';
+    else { $('msg').textContent = "No game with that code is open. Check the code with your friend."; $('go').disabled = false; }
+  };
+  peer = new Peer();
+  peer.on('error', e => {
+    if (e.type === 'peer-unavailable') { if (++misses === 2) finish(null); }
+    else { $('msg').textContent = 'Connection problem: ' + e.type; $('go').disabled = false; done = true; }
+  });
+  peer.on('open', () => {
+    for (const [prefix, page] of Object.entries(targets)) {
+      const c = peer.connect(prefix + code, { metadata: { probe: true } });
+      c.on('open', () => finish(page));
+    }
+  });
+  setTimeout(() => finish(null), 10000);
+}
+$('go').onclick = go;
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+$('name').addEventListener('keydown', e => { if (e.key === 'Enter') ($('code').value.length === 4 ? go() : $('code').focus()); });
+</script>
+</body>
+</html>

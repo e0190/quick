@@ -88,7 +88,7 @@
     <label>Players: open this link on your phone</label>
     <div class="linkbox" id="hurl" style="font-size:22px"></div>
     <button class="go" id="shareT" style="max-width:420px;margin:6px auto 10px;display:block">SHARE INVITE LINK</button>
-    <div class="dim">or go to the site, tap Tournament, then "I'm a player", and type</div>
+    <div class="dim">or go to <b class="playurl" style="color:var(--text)"></b> and type</div>
     <div class="code" id="hcode">....</div>
     <div class="roster" id="roster"></div>
     <div class="status" id="rosterMsg"><span class="dot"></span>Waiting for players...</div>
@@ -150,7 +150,7 @@ function openPJoin(code) {
 }
 $('beJoin').onclick = () => openPJoin('');
 const qp = new URLSearchParams(location.search), qJoin = qp.get('j') || qp.get('join');
-if (qJoin) { history.replaceState(null, '', location.pathname); setTimeout(() => openPJoin(qJoin.toUpperCase())); }
+if (qJoin) { history.replaceState(null, '', location.pathname); setTimeout(() => { openPJoin(qJoin.toUpperCase()); if (qp.get('auto') && $('pname').value) pJoin(); }); }
 
 /* =================== HOST =================== */
 let themeKey = 'nba', peer, players = new Map(), order = [], rounds = [], cur = null, started = false, timer;
@@ -169,12 +169,14 @@ $('openRoom').onclick = () => { show('hlobby'); openRoom(); };
 function openRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('hcode').textContent = code;
+  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play').replace(location.protocol + '//', ''));
   const url = SITE + 'tournament.html?j=' + code;
   $('hurl').textContent = url.replace(/^https?:\/\//, '');
   $('shareT').onclick = async () => { if ((await shareOrCopy(url, 'Join my QUICK! tournament')) === 'copied') toast('Invite link copied. Send it to the players.'); };
   peer = new Peer(PREFIX + code);
   peer.on('error', e => { if (e.type === 'unavailable-id') openRoom(); else $('rosterMsg').textContent = 'Connection problem: ' + e.type; });
   peer.on('connection', c => {
+    if (c.metadata && c.metadata.probe) { c.on('open', () => setTimeout(() => c.close(), 200)); return; }
     c.on('data', m => onHostData(c, m));
     c.on('close', () => dropPlayer(c.peer));
   });

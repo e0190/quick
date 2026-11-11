@@ -17,13 +17,22 @@
 <div id="home">
   <h1>QUICK!</h1>
   <p class="sub">Take turns naming things in a category. Too slow, a repeat or a wrong answer and you lose.</p>
-  <div class="cards">
-    <button class="card" id="goLocal"><b>Play here</b><span>Two players, one computer. Take turns at the keyboard.</span></button>
-    <button class="card" id="goOnline"><b>Play a friend online</b><span>You each use your own phone or computer. Send them a link.</span></button>
+  <a class="joinbig" href="play/"><b>JOIN A GAME</b><span>Got a code from a friend? Tap here</span></a>
+  <div class="cards two">
+    <button class="card" id="goFriends"><b>Play with friends</b><span>Two players, on one computer or each on your own device.</span></button>
     <a class="card" href="tournament.html"><b>Tournament</b><span>3 or more players with a bracket. Best on a TV with phones.</span></a>
   </div>
-  <button class="go alt" id="goMaker" style="margin-top:6px">MAKE YOUR OWN CATEGORY</button>
-  <p class="center dim small" style="margin-top:18px">Got a code from a friend? <a href="#" id="goJoin">Type it here</a></p>
+  <p class="center small" style="margin-top:18px"><a href="#" id="goMaker">Make your own category</a></p>
+</div>
+
+<!-- PLAY WITH FRIENDS -->
+<div id="friends" class="hidden">
+  <a href="#" class="back" data-home>Back</a>
+  <h2 class="title2">Play with friends</h2>
+  <div class="cards">
+    <button class="card" id="goLocal"><b>Play on this computer</b><span>Both players take turns at this keyboard.</span></button>
+    <button class="card" id="goOnline"><b>Let them join</b><span>Each person uses their own phone or computer. You send them a link.</span></button>
+  </div>
 </div>
 
 <!-- JOIN (from a link or typed code) -->
@@ -72,7 +81,7 @@
     <label>Invite your friend</label>
     <button class="go" id="shareInvite">SHARE INVITE LINK</button>
     <div class="linkbox" id="inviteLink"></div>
-    <div class="dim small center">Or they open the site, tap "Type it here" and enter <b id="roomCode" class="codeinline">....</b></div>
+    <div class="dim small center">Or they go to <b class="playurl"></b> and type <b id="roomCode" class="codeinline">....</b></div>
     <div class="status" id="lobbyMsg"><span class="dot"></span>Waiting for your friend to join...</div>
   </div>
 
@@ -160,7 +169,7 @@ let target = 0, champDone = false;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PREFIX = 'quickgame-x7-';
 
-function show(id) { ['home', 'join', 'maker', 'setup', 'wait', 'game', 'over'].forEach(s => $(s).classList.toggle('hidden', s !== id)); window.scrollTo(0, 0); }
+function show(id) { ['home', 'friends', 'join', 'maker', 'setup', 'wait', 'game', 'over'].forEach(s => $(s).classList.toggle('hidden', s !== id)); window.scrollTo(0, 0); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2600); }
 const online = () => mode === 'host' || mode === 'guest';
 const myTurn = () => !online() || turn === me;
@@ -241,20 +250,20 @@ $('mkSave').onclick = () => {
   if (mkFrom === 'setup') show('setup'); else startSetup('local');
 };
 $('makerBack').onclick = e => { e.preventDefault(); show(mkFrom === 'setup' ? 'setup' : 'home'); };
-$('goMaker').onclick = () => openMaker('home');
+$('goMaker').onclick = e => { e.preventDefault(); openMaker('home'); };
 
 // --- navigation
 document.querySelectorAll('[data-home]').forEach(a => a.onclick = e => { e.preventDefault(); leaveRoom(); show('home'); });
 $('goLocal').onclick = () => startSetup('local');
 $('goOnline').onclick = () => startSetup('host');
-$('goJoin').onclick = e => { e.preventDefault(); openJoin(''); };
+$('goFriends').onclick = () => show('friends');
 
 function leaveRoom() { if (peer) { peer.destroy(); peer = null; conn = null; } mode = 'local'; }
 function startSetup(m) {
   leaveRoom();
   mode = m;
   const host = m === 'host';
-  $('setupTitle').textContent = host ? 'Play a friend online' : 'Play here';
+  $('setupTitle').textContent = host ? 'Let them join' : 'Play on this computer';
   $('invite').style.display = host ? '' : 'none';
   $('n2wrap').style.display = host ? 'none' : '';
   $('l1').textContent = host ? 'Your name' : 'Player 1';
@@ -269,6 +278,7 @@ function startSetup(m) {
 function hostRoom() {
   const code = Array.from({length: 4}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('roomCode').textContent = code;
+  document.querySelectorAll('.playurl').forEach(e => e.textContent = (SITE + 'play').replace(location.protocol + '//', ''));
   const link = SITE + '?j=' + code;
   $('inviteLink').textContent = link.replace(/^https?:\/\//, '');
   $('shareInvite').onclick = async () => {
@@ -279,6 +289,7 @@ function hostRoom() {
   peer = new Peer(PREFIX + code);
   peer.on('error', e => { if (e.type === 'unavailable-id') hostRoom(); else setStatus('Connection problem (' + e.type + '). Go back and try again.', false); });
   peer.on('connection', c => {
+    if (c.metadata && c.metadata.probe) { c.on('open', () => setTimeout(() => c.close(), 200)); return; }
     if (conn && conn.open) { c.on('open', () => { c.send({t: 'full'}); setTimeout(() => c.close(), 300); }); return; }
     conn = c; me = 0;
     c.on('data', onData);
@@ -328,7 +339,7 @@ function dropped() {
 (async () => {
   const q = new URLSearchParams(location.search);
   const j = q.get('j') || q.get('join');
-  if (j) { history.replaceState(null, '', SITE); return openJoin(j.toUpperCase()); }
+  if (j) { history.replaceState(null, '', SITE); openJoin(j.toUpperCase()); if (q.get('auto') && $('jn').value) joinRoom(); return; }
   const cat = q.get('cat');
   if (cat) {
     history.replaceState(null, '', SITE);
