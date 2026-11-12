@@ -62,3 +62,22 @@ function iconPicker(el, onPick) {
     if (onPick) onPick(cur);
   };
 }
+
+// Waiting lobby for players: pick an icon while you wait; a big card shows your choice.
+function waitingLobby(el, name, status, onPick) {
+  const e = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  el.innerHTML = `<div class="wl">
+    <div class="wl-bar"><span class="wl-me">${e(name)}</span><b>Waiting in Lobby</b><span></span></div>
+    <div class="wl-body">
+      <div class="wl-grid"></div>
+      <div class="wl-side">
+        <div class="wl-card"><div class="wl-big"></div><div class="wl-name"></div></div>
+        <div class="wl-status"><span class="dot"></span><span class="wl-text">${e(status)}</span></div>
+      </div>
+    </div></div>`;
+  const big = el.querySelector('.wl-big'), nm = el.querySelector('.wl-name');
+  const paint = (i) => { big.innerHTML = iconSVG(i, 200); nm.textContent = ICON_DRAW[i][0]; big.classList.remove('pop'); void big.offsetWidth; big.classList.add('pop'); };
+  iconPicker(el.querySelector('.wl-grid'), (i) => { paint(i); if (onPick) onPick(i); });
+  paint(myIcon());
+  return { status: (t) => { el.querySelector('.wl-text').textContent = t; } };
+}

@@ -113,10 +113,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- GUEST WAITING -->
-<div id="wait" class="hidden">
-  <h1>QUICK!</h1>
-  <div class="panel" style="text-align:center"><div style="font-size:22px;font-weight:800" id="waitMsg">Connected. Waiting for the host to start...</div></div>
-</div>
+<div id="wait" class="hidden"><div id="waitBox"></div></div>
 
 <!-- GAME -->
 <div id="game" class="hidden">
@@ -324,7 +321,7 @@ function joinRoom() {
   peer.on('error', e => { $('codeWrap').style.display = ''; $('joinMsg').textContent = e.type === 'peer-unavailable' ? "No game with that code is open. Check it with your friend." : 'Connection problem: ' + e.type; });
   peer.on('open', () => {
     conn = peer.connect(PREFIX + code, {reliable: true});
-    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name, icon: myIcon()}); $('waitMsg').textContent = "You're in! Waiting for your friend to press START..."; show('wait'); });
+    conn.on('open', () => { mode = 'guest'; me = 1; send({t: 'hello', name, icon: myIcon()}); window.lobbyUI = waitingLobby($('waitBox'), name, 'Waiting for host to press START', (i) => send({t: 'icon', icon: i})); show('wait'); });
     conn.on('data', onData);
     conn.on('close', () => { conn = null; dropped(); });
   });
@@ -360,6 +357,7 @@ function dropped() {
 function onData(m) {
   if (m.t === 'full') { $('joinMsg').textContent = 'That room already has two players.'; return; }
   if (mode === 'host') {
+    if (m.t === 'icon' && icons) { icons[1] = (+m.icon || 0) % ICON_COUNT; return; }
     if (m.t === 'hello') { guestName = m.name; icons = [myIcon(), (+m.icon || 0) % ICON_COUNT]; setStatus(`${m.name} joined! Pick a category and press START.`, true); $('start').disabled = false; $('start').textContent = 'START'; toast(`${m.name} joined`); }
     if (m.t === 'live' && turn === 1 && running) updateLive(m.v);
     if (m.t === 'submit' && turn === 1 && running) submit(m.v);
@@ -367,7 +365,7 @@ function onData(m) {
     if (m.t === 'turn') { ({themeKey, names, wins, turn, turnTime, target} = m); icons = m.icons || null; THEMES[themeKey] = m.theme; applyUsed(m.used); beginTurn(); }
     if (m.t === 'live') updateLive(m.v);
     if (m.t === 'over') { clearInterval(timer); running = false; ({wins, names, target, champDone} = m); applyUsed(m.used); showOver(m.w, m.why, m.missed); }
-    if (m.t === 'menu') { show('wait'); $('waitMsg').textContent = 'The host is picking a new theme...'; }
+    if (m.t === 'menu') { show('wait'); if (window.lobbyUI) lobbyUI.status('Host is picking a new category...'); }
   }
 }
 function applyUsed(list) {

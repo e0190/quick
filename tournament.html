@@ -42,6 +42,8 @@
 .m .tbd{color:var(--dim);font-weight:400;font-style:italic}
 .champ{font-family:'Archivo Black',sans-serif;font-size:80px;color:var(--brand);text-align:center;line-height:1;text-shadow:5px 5px 0 var(--p1);animation:pop2 .6s cubic-bezier(.2,1.6,.4,1);word-break:break-word}
 @media(max-width:700px){.big2{grid-template-columns:1fr}.code{font-size:72px}.banner{font-size:36px}.champ{font-size:52px}.vs .side .nm{font-size:26px}}
+#pview.lobbying .top{display:none}
+#pview.lobbying #pstage{background:none;border:0;box-shadow:none;padding:0;backdrop-filter:none}
 /* --- player icons */
 .picon{display:inline-block;vertical-align:middle;margin-right:.35em;flex:none}
 .bn{display:inline-flex;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -242,6 +244,7 @@ function onHostData(c, m) {
     drawRoster(); pushAll();
     return;
   }
+  if (m.t === 'icon') { const p = players.get(c.peer); if (p && !started) { p.icon = (+m.icon || 0) % ICON_COUNT; drawRoster(); } return; }
   if (!cur || cur.phase !== 'play') return;
   const turnId = cur.ids[cur.turn];
   if (c.peer !== turnId) return;
@@ -480,8 +483,12 @@ function renderPlayer() {
   const inMatch = s.me === 0 || s.me === 1;
   const opp = inMatch ? (s.me === 0 ? s.b : s.a) : '';
   inp.classList.add('hidden');
+  $('pview').classList.remove('lobbying');
   if (s.phase === 'lobby') {
-    el.innerHTML = `<div class="banner">You're in!</div><div class="center dim" style="font-size:18px">${s.count} player${s.count > 1 ? 's' : ''} so far. Watch the host screen; the tournament starts soon.</div>`;
+    $('pview').classList.add('lobbying');
+    if (!el.querySelector('.wl')) window.lobbyUI = waitingLobby(el, myName, '', (i) => { if (conn && conn.open) conn.send({t: 'icon', icon: i}); $('pMe').innerHTML = iconSVG(i, 26) + esc(myName); });
+    lobbyUI.status(`Waiting for host · ${s.count} player${s.count > 1 ? 's' : ''} in`);
+    return;
   } else if (s.phase === 'champ') {
     el.innerHTML = s.you ? `<div class="center dim" style="font-weight:800;letter-spacing:3px">YOU WON IT ALL</div><div class="champ">CHAMPION</div>` : `<div class="center dim" style="font-weight:800;letter-spacing:3px">CHAMPION</div><div class="center">${iconSVG(s.champIcon, 100)}</div><div class="champ">${esc(s.champ)}</div>`;
   } else if (!inMatch) {

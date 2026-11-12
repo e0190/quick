@@ -8,58 +8,92 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
-<script src="icons.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+body{overflow:hidden}
+.jbar{position:fixed;top:0;left:0;right:0;z-index:3;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 18px;background:linear-gradient(135deg,#6a5cff,#a66bff);font-weight:700}
+.jbar b{font-family:'Archivo Black',sans-serif;font-size:22px;font-weight:400}
+.jbar a{color:#fff;text-decoration:none;opacity:.9}
+.jstage{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 16px 40px;text-align:center}
+.jstep h2{font-family:'Archivo Black',sans-serif;font-size:clamp(40px,9vw,84px);margin:0 0 22px;line-height:1;text-shadow:4px 4px 0 var(--p1),8px 8px 0 rgba(0,0,0,.25)}
+.jrow{display:flex;gap:10px;justify-content:center;width:min(520px,92vw);margin:0 auto}
+.jrow input{flex:1;min-width:0;font-size:28px!important;text-align:center;padding:14px!important;background:#fff!important;color:#14112b!important;border:0!important;border-radius:14px;box-shadow:0 6px 0 #b9b6cc;font-weight:700}
+.jrow input::placeholder{color:#9b98ae}
+#code{text-transform:uppercase;letter-spacing:10px;font-family:'Archivo Black',sans-serif}
+.jgo{width:70px;flex:none;border:0;border-radius:14px;background:#fff;color:#14112b;font-size:30px;font-weight:800;cursor:pointer;box-shadow:0 6px 0 #b9b6cc}
+.jgo:active{transform:translateY(4px);box-shadow:0 2px 0 #b9b6cc}
+.jgo:disabled{opacity:.6;cursor:default}
+.jmsg{min-height:26px;margin-top:18px;font-weight:700;color:var(--brand)}
+.jhint{color:var(--dim);margin-top:6px}
+.leaves{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.leaf{position:absolute;top:-80px;animation:fall linear infinite}
+@keyframes fall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--sway),55vh) rotate(180deg)}100%{transform:translate(0,115vh) rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.leaf{animation:none;display:none}}
+</style>
 </head>
 <body>
-<div class="wrap">
-  <a href="index.html" class="back">Home</a>
-  <h1>QUICK!</h1>
-  <div class="panel">
-    <div class="big-q">Join a game</div>
-    <label>Your name</label>
-    <input id="name" maxlength="14" placeholder="Your name" autocomplete="off" enterkeyhint="next">
-    <div style="height:14px"></div>
-    <label>Code from your friend</label>
-    <input id="code" maxlength="4" placeholder="ABCD" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
-      style="text-transform:uppercase;letter-spacing:10px;font-size:40px;text-align:center;font-family:'Archivo Black',sans-serif;padding:16px">
-    <div style="margin-top:14px"><label>Pick your icon</label><div id="pIcons" class="compact"></div></div>
-    <div style="height:18px"></div>
-    <button class="go" id="go" style="font-size:30px;padding:22px">JOIN</button>
-    <div class="msg center" id="msg"></div>
+<div class="jbar"><a href="index.html">&lt; Home</a><b>Join a Game</b><span></span></div>
+<div class="leaves" id="leaves"></div>
+
+<div class="jstage">
+  <div class="jstep" id="step1">
+    <h2>Game Code</h2>
+    <div class="jrow"><input id="code" maxlength="4" placeholder="ABCD" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"><button class="jgo" id="go1" aria-label="Next">&rarr;</button></div>
+    <div class="jmsg" id="msg1"></div>
+    <div class="jhint">The 4-letter code on your friend's screen</div>
   </div>
-  <p class="center dim small">Works for 2-player games and tournaments.</p>
+  <div class="jstep hidden" id="step2">
+    <h2>Enter Nickname</h2>
+    <div class="jrow"><input id="name" maxlength="14" placeholder="Nickname" autocomplete="off" enterkeyhint="go"><button class="jgo" id="go2" aria-label="Join">&rarr;</button></div>
+    <div class="jmsg" id="msg2"></div>
+    <div class="jhint">You'll pick your icon in the lobby</div>
+  </div>
 </div>
+
 <script>
 const $ = id => document.getElementById(id);
-iconPicker($('pIcons'));
-try { $('name').value = localStorage.getItem('quick_name') || ''; } catch (e) {}
-const pre = (function () { const s = new URLSearchParams(String(location.hash).replace(/^#/, '')).get('j') || new URLSearchParams(location.search).get('j'); return s; })();
-if (pre) $('code').value = pre.toUpperCase();
-($('name').value ? $('code') : $('name')).focus();
 
-let peer;
-function go() {
-  const name = $('name').value.trim(), code = $('code').value.trim().toUpperCase().replace(/[^A-Z]/g, '');
-  if (!name) { $('msg').textContent = 'Type your name.'; return $('name').focus(); }
-  if (code.length !== 4) { $('msg').textContent = 'The code is 4 letters.'; return $('code').focus(); }
-  try { localStorage.setItem('quick_name', name); } catch (e) {}
-  $('msg').textContent = 'Finding the game...'; $('go').disabled = true;
+// falling leaves (drawn here, no images)
+(() => {
+  const colors = ['#ffd23f', '#ffb020', '#ff8a3d', '#e2442f', '#f6c445'];
+  const shapes = [
+    'M32 6c3 6 4 10 3 14 4-3 9-5 14-4-1 5-4 9-8 12 5 0 10 2 13 6-5 3-11 4-16 2 2 4 2 9 0 13-4-2-7-6-8-10l0 19h-2l0-19c-1 4-4 8-8 10-2-4-2-9 0-13-5 2-11 1-16-2 3-4 8-6 13-6-4-3-7-7-8-12 5-1 10 1 14 4-1-4 0-8 3-14z',
+    'M32 6c13 9 19 22 13 38-3 7-8 11-13 14-5-3-10-7-13-14C13 28 19 15 32 6z'
+  ];
+  const leaf = (c, k) => `<svg width="100%" height="100%" viewBox="0 0 64 64"><path fill="${c}" d="${shapes[k]}"/><path d="M32 ${k ? 12 : 22}V60" stroke="rgba(0,0,0,.28)" stroke-width="2" stroke-linecap="round"/></svg>`;
+  let html = '';
+  for (let i = 0; i < 16; i++) {
+    const size = 34 + Math.random() * 46, dur = 9 + Math.random() * 10;
+    html += `<div class="leaf" style="left:${Math.random() * 100}%;width:${size}px;height:${size}px;animation-duration:${dur}s;animation-delay:${-Math.random() * dur}s;--sway:${(Math.random() * 160 - 80).toFixed(0)}px;opacity:${(.55 + Math.random() * .4).toFixed(2)}">${leaf(colors[i % colors.length], i % 3 === 2 ? 1 : 0)}</div>`;
+  }
+  $('leaves').innerHTML = html;
+})();
+
+try { $('name').value = localStorage.getItem('quick_name') || ''; } catch (e) {}
+const pre = new URLSearchParams(String(location.hash).replace(/^#/, '')).get('j') || new URLSearchParams(location.search).get('j');
+if (pre) $('code').value = pre.toUpperCase();
+$('code').focus();
+
+// Step 1: check the code is a real open game, and which kind
+let peer, found = null;
+function findGame() {
+  const code = $('code').value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  if (code.length !== 4) { $('msg1').textContent = 'The code is 4 letters.'; return $('code').focus(); }
+  $('msg1').textContent = 'Finding the game...'; $('go1').disabled = true;
   if (peer) peer.destroy();
   const targets = { 'quickgame-x7-': 'index.html', 'quicktourney-x7-': 'tournament.html' };
   let misses = 0, done = false;
   const finish = (page) => {
-    if (done) return; done = true; peer.destroy();
-    if (page) {
-      try { localStorage.setItem('quick_handoff', JSON.stringify({ code, t: Date.now() })); } catch (e) {}
-      location.href = page + '#j=' + code + '&auto=1';
-    }
-    else { $('msg').textContent = "No game with that code is open. Check the code with your friend."; $('go').disabled = false; }
+    if (done) return; done = true; peer.destroy(); $('go1').disabled = false;
+    if (!page) { $('msg1').textContent = 'No game with that code is open. Check it with your friend.'; return; }
+    found = { code, page };
+    $('step1').classList.add('hidden'); $('step2').classList.remove('hidden');
+    $('name').focus(); $('name').select();
   };
   peer = new Peer();
   peer.on('error', e => {
     if (e.type === 'peer-unavailable') { if (++misses === 2) finish(null); }
-    else { $('msg').textContent = 'Connection problem: ' + e.type; $('go').disabled = false; done = true; }
+    else { $('msg1').textContent = 'Connection problem: ' + e.type; $('go1').disabled = false; done = true; }
   });
   peer.on('open', () => {
     for (const [prefix, page] of Object.entries(targets)) {
@@ -69,9 +103,23 @@ function go() {
   });
   setTimeout(() => finish(null), 10000);
 }
-$('go').onclick = go;
-$('code').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-$('name').addEventListener('keydown', e => { if (e.key === 'Enter') ($('code').value.length === 4 ? go() : $('code').focus()); });
+
+// Step 2: nickname, then into the game (it joins by itself)
+function join() {
+  const name = $('name').value.trim();
+  if (!name) { $('msg2').textContent = 'Type a nickname.'; return $('name').focus(); }
+  try {
+    localStorage.setItem('quick_name', name);
+    localStorage.setItem('quick_handoff', JSON.stringify({ code: found.code, t: Date.now() }));
+  } catch (e) {}
+  $('go2').disabled = true; $('msg2').textContent = 'Joining...';
+  location.href = found.page + '#j=' + found.code + '&auto=1';
+}
+
+$('go1').onclick = findGame;
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') findGame(); });
+$('go2').onclick = join;
+$('name').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
 </script>
 </body>
 </html>
